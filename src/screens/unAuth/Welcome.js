@@ -1,17 +1,9 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  ImageBackground,
-  StatusBar,
-} from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { hp, wp } from '../../utils/responsive'; // optional if you have these
 import { COLORS } from '../../constants'; // expects primary/black/white
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BlurBackground, GradientBackground } from '../../components';
+import { GradientBackground, PoppinsText } from '../../components';
 import assets from '../../assets';
 export default function Welcome({ navigation }) {
   return (
@@ -30,7 +22,7 @@ export default function Welcome({ navigation }) {
             activeOpacity={0.8}
             onPress={() => navigation.navigate('SignUp')}
           >
-            <Text style={styles.ghostText}>Sign Up</Text>
+            <PoppinsText style={styles.ghostText}>Sign Up</PoppinsText>
           </TouchableOpacity>
           <View style={[styles.primaryBtn, { marginTop: hp(2) }]}>
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
@@ -77,11 +69,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  primaryText: {
-    color: COLORS?.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
   ghostBtn: {
     width: wp(90),
     height: hp(7.5),
@@ -92,7 +79,7 @@ const styles = StyleSheet.create({
   },
   ghostText: {
     color: COLORS?.primary || '#7B1FA2',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: hp(1.9),
+    fontWeight: 'bold',
   },
 });

@@ -4,11 +4,11 @@ import {
   TextInputProps,
   StyleSheet,
   View,
-  Text,
   TouchableOpacity,
 } from 'react-native';
 import { hp, wp } from '../utils/responsive';
 import { COLORS } from '../constants';
+import { PoppinsText } from './index';
 
 interface CustomTextInputProps extends TextInputProps {
   error?: string;
@@ -52,7 +52,9 @@ const TextInput: React.FC<CustomTextInputProps> = ({
           </TouchableOpacity>
         )}
       </View>
-      {error && <Text style={[styles.error, errorStyle]}>{error}</Text>}
+      {error && (
+        <PoppinsText style={[styles.error, errorStyle]}>{error}</PoppinsText>
+      )}
     </View>
   );
 };
@@ -74,7 +76,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
   },
   input: {
-    fontSize: 16,
+    fontSize: hp(1.9),
+    fontFamily: 'Poppins-Regular',
     alignSelf: 'center',
     height: hp('7'),
     width: wp(65),

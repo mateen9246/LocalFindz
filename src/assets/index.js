@@ -9,6 +9,7 @@ const assets = {
   userIcon: require('./images/Group 138.png'),
   eye: require('./images/Vector (1).png'),
   lockIcon: require('./images/Vector.png'),
+  bottomShape: require('./images/Vector 3.png'),
 };
 
 export default assets;

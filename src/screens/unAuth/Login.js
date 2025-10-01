@@ -1,15 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Alert,
-  StyleSheet,
-  Image,
-} from 'react-native';
+import { View, TouchableOpacity, Alert, StyleSheet, Image } from 'react-native';
 import { useAppDispatch, useAppSelector } from '../../hooks';
 import { loginUser, clearError } from '../../store/slices/authSlice';
-import { CustomTextInput, CustomButton } from '../../components';
+import { CustomTextInput, CustomButton, PoppinsText } from '../../components';
 import { COLORS } from '../../constants';
 import { hp, wp } from '../../utils/responsive';
 import assets from '../../assets';
@@ -59,10 +52,10 @@ export default function Login({ navigation }) {
       />
 
       {/* Heading */}
-      <Text style={styles.heading}>
-        Welcome <Text style={styles.headingBold}>Back!</Text>
-      </Text>
-      <Text style={styles.subTitle}>Glad to see you, Again!</Text>
+      <PoppinsText style={styles.heading}>
+        Welcome <PoppinsText style={styles.headingBold}>Back!</PoppinsText>
+      </PoppinsText>
+      <PoppinsText style={styles.subTitle}>Glad to see you, Again!</PoppinsText>
 
       {/* Inputs */}
       <CustomTextInput
@@ -105,7 +98,7 @@ export default function Login({ navigation }) {
       {/* Divider */}
       <View style={styles.dividerRow}>
         <View style={styles.divider} />
-        <Text style={styles.orText}>Or Sign In with</Text>
+        <PoppinsText style={styles.orText}>Or Sign In with</PoppinsText>
         <View style={styles.divider} />
       </View>
 
@@ -138,19 +131,23 @@ export default function Login({ navigation }) {
       </View>
 
       {/* Footer link */}
-      <Text style={styles.footerText}>
+      <PoppinsText style={styles.footerText}>
         Don’t have an account?
-        <Text
+        <PoppinsText
           style={styles.signInLink}
           onPress={() => navigation.navigate('SignUp')}
         >
           {' '}
           Sign Up
-        </Text>
-      </Text>
+        </PoppinsText>
+      </PoppinsText>
 
       {/* Purple angled shape */}
-      <View style={styles.bottomShape} />
+      <Image
+        source={assets.bottomShape}
+        style={styles.bottomShape}
+        resizeMode="contain"
+      />
     </View>
   );
 }
@@ -169,15 +166,16 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   heading: {
-    fontSize: 24,
+    fontSize: hp(4),
     color: COLORS.black,
     alignSelf: 'flex-start',
+    fontWeight: 'light',
   },
   headingBold: {
     fontWeight: 'bold',
   },
   subTitle: {
-    fontSize: 14,
+    fontSize: hp(1.9),
     color: COLORS.gray,
     alignSelf: 'flex-start',
     marginTop: hp(0.5),
@@ -200,8 +198,9 @@ const styles = StyleSheet.create({
   },
   orText: {
     marginHorizontal: wp(2),
-    fontSize: 14,
+    fontSize: hp(1.5),
     color: COLORS.darkGray,
+    fontFamily: 'Poppins-Regular',
   },
   socialRow: {
     flexDirection: 'row',
@@ -220,21 +219,20 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
   },
   footerText: {
-    fontSize: 14,
+    fontSize: hp(1.9),
+    fontFamily: 'Poppins-Regular',
     color: COLORS.black,
-    marginTop: hp(2),
+    marginTop: hp(1),
   },
   signInLink: {
     color: COLORS.primary,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
   bottomShape: {
+    width: wp(100),
+    height: wp(100),
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    borderTopWidth: hp(15),
-    borderRightWidth: wp(100),
-    borderColor: 'transparent',
-    borderTopColor: COLORS.primary,
+    bottom: hp(-16),
+    right: wp(10),
   },
 });

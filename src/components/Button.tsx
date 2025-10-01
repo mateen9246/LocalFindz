@@ -37,7 +37,7 @@ const Button: React.FC<ButtonProps> = ({
 }) => {
   const getButtonStyle = (): ViewStyle => {
     const baseStyle: ViewStyle[] = [styles.button];
-    
+
     // Size styles
     switch (size) {
       case 'small':
@@ -49,7 +49,7 @@ const Button: React.FC<ButtonProps> = ({
       default:
         baseStyle.push(styles.buttonMedium);
     }
-    
+
     // Variant styles
     switch (variant) {
       case 'secondary':
@@ -64,23 +64,23 @@ const Button: React.FC<ButtonProps> = ({
       default:
         baseStyle.push(styles.buttonPrimary);
     }
-    
+
     // State styles
     if (disabled || loading) {
       baseStyle.push(styles.buttonDisabled);
     }
-    
+
     // Width style
     if (fullWidth) {
       baseStyle.push(styles.buttonFullWidth);
     }
-    
+
     return StyleSheet.flatten([baseStyle, style]);
   };
 
   const getTextStyle = (): TextStyle => {
     const baseStyle: TextStyle[] = [styles.buttonText];
-    
+
     // Size text styles
     switch (size) {
       case 'small':
@@ -92,7 +92,7 @@ const Button: React.FC<ButtonProps> = ({
       default:
         baseStyle.push(styles.buttonTextMedium);
     }
-    
+
     // Variant text styles
     switch (variant) {
       case 'secondary':
@@ -107,12 +107,12 @@ const Button: React.FC<ButtonProps> = ({
       default:
         baseStyle.push(styles.buttonTextPrimary);
     }
-    
+
     // State text styles
     if (disabled || loading) {
       baseStyle.push(styles.buttonTextDisabled);
     }
-    
+
     return StyleSheet.flatten([baseStyle, textStyle]);
   };
 
@@ -138,8 +138,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
+    fontFamily: 'Poppins-Bold',
   },
-  
+
   // Size styles
   buttonSmall: {
     height: hp('5'),
@@ -153,7 +154,7 @@ const styles = StyleSheet.create({
     height: hp('7'),
     paddingHorizontal: wp('8'),
   },
-  
+
   // Variant styles
   buttonPrimary: {
     backgroundColor: COLORS.primary,
@@ -169,35 +170,36 @@ const styles = StyleSheet.create({
   buttonDanger: {
     backgroundColor: COLORS.danger,
   },
-  
+
   // State styles
   buttonDisabled: {
     backgroundColor: COLORS.disabled,
     opacity: 0.6,
   },
-  
+
   // Width styles
   buttonFullWidth: {
     width: '100%',
   },
-  
+
   // Text styles
   buttonText: {
-    fontWeight: '600',
     textAlign: 'center',
+    fontSize: hp(1.9),
+    fontFamily: 'Poppins-Bold',
   },
-  
+
   // Text size styles
   buttonTextSmall: {
-    fontSize: 14,
+    fontSize: hp(1.9),
   },
   buttonTextMedium: {
-    fontSize: 16,
+    fontSize: hp(1.9),
   },
   buttonTextLarge: {
-    fontSize: 18,
+    fontSize: hp(1.9),
   },
-  
+
   // Text variant styles
   buttonTextPrimary: {
     color: COLORS.white,
@@ -211,7 +213,7 @@ const styles = StyleSheet.create({
   buttonTextDanger: {
     color: COLORS.white,
   },
-  
+
   // Text state styles
   buttonTextDisabled: {
     color: COLORS.textSecondary,

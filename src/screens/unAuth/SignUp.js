@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 // import Icon from 'react-native-vector-icons/FontAwesome';
 import { firebaseService } from '../../services/firebase';
-import { CustomTextInput, CustomButton, Icon } from '../../components';
+import { CustomTextInput, CustomButton, PoppinsText } from '../../components';
 import { COLORS } from '../../constants';
 import { hp, wp } from '../../utils/responsive';
 import assets from '../../assets';
@@ -50,10 +50,12 @@ export default function SignUp({ navigation }) {
       />
 
       {/* Heading */}
-      <Text style={styles.heading}>
-        Let’s <Text style={styles.headingBold}>Get Started</Text>
-      </Text>
-      <Text style={styles.subTitle}>Create your account to get started</Text>
+      <PoppinsText style={styles.heading}>
+        Let’s <PoppinsText style={styles.headingBold}>Get Started</PoppinsText>
+      </PoppinsText>
+      <PoppinsText style={styles.subTitle}>
+        Create your account to get started
+      </PoppinsText>
 
       {/* Inputs */}
       <CustomTextInput
@@ -96,7 +98,7 @@ export default function SignUp({ navigation }) {
       {/* Divider */}
       <View style={styles.dividerRow}>
         <View style={styles.divider} />
-        <Text style={styles.orText}>Or Sign In with</Text>
+        <PoppinsText style={styles.orText}>Or Sign In with</PoppinsText>
         <View style={styles.divider} />
       </View>
 
@@ -129,19 +131,23 @@ export default function SignUp({ navigation }) {
       </View>
 
       {/* Footer link */}
-      <Text style={styles.footerText}>
+      <PoppinsText style={styles.footerText}>
         Don’t have an account?
-        <Text
+        <PoppinsText
           style={styles.signInLink}
           onPress={() => navigation.navigate('Login')}
         >
           {' '}
           Sign In
-        </Text>
-      </Text>
+        </PoppinsText>
+      </PoppinsText>
 
       {/* Purple angled shape */}
-      <View style={styles.bottomShape} />
+      <Image
+        source={assets.bottomShape}
+        style={styles.bottomShape}
+        resizeMode="contain"
+      />
     </View>
   );
 }
@@ -160,15 +166,16 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   heading: {
-    fontSize: 24,
+    fontSize: hp(4),
     color: COLORS.black,
     alignSelf: 'flex-start',
+    fontWeight: 'light',
   },
   headingBold: {
     fontWeight: 'bold',
   },
   subTitle: {
-    fontSize: 14,
+    fontSize: hp(1.9),
     color: COLORS.gray,
     alignSelf: 'flex-start',
     marginTop: hp(0.5),
@@ -213,19 +220,17 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 14,
     color: COLORS.black,
-    marginTop: hp(2),
+    marginTop: hp(1),
   },
   signInLink: {
     color: COLORS.primary,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
   bottomShape: {
+    width: wp(100),
+    height: wp(100),
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    borderTopWidth: hp(15),
-    borderRightWidth: wp(100),
-    borderColor: 'transparent',
-    borderTopColor: COLORS.primary,
+    bottom: hp(-16),
+    right: wp(10),
   },
 });

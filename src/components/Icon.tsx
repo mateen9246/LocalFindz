@@ -1,25 +1,45 @@
 import React from 'react';
-import { Text, StyleSheet } from 'react-native';
+import { Text, StyleSheet, TextStyle } from 'react-native';
+import { FontAwesome } from '@react-native-vector-icons/fontawesome';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { COLORS } from '../constants';
 
 interface IconProps {
   name: string;
   size?: number;
   color?: string;
-  style?: any;
+  style?: TextStyle;
+  family?: 'fontawesome' | 'ionicons' | 'poppins';
+  weight?: 'regular' | 'medium' | 'bold';
 }
 
 /**
- * Simple icon component using Unicode symbols
- * This is a temporary solution until a proper icon library is added
+ * Enhanced icon component with support for FontAwesome, Ionicons, and Poppins font
+ * Supports both vector icons and custom text with Poppins font family
  */
 const Icon: React.FC<IconProps> = ({ 
   name, 
   size = 20, 
   color = COLORS.textInput, 
-  style 
+  style,
+  family = 'fontawesome',
+  weight = 'regular'
 }) => {
-  const getIconSymbol = (iconName: string): string => {
+  // Get Poppins font family based on weight
+  const getPoppinsFontFamily = (fontWeight: 'regular' | 'medium' | 'bold'): string => {
+    switch (fontWeight) {
+      case 'bold':
+        return 'Poppins-Bold';
+      case 'medium':
+        return 'Poppins-Medium';
+      case 'regular':
+      default:
+        return 'Poppins-Regular';
+    }
+  };
+
+  // Get icon symbol for Poppins text-based icons
+  const getPoppinsIconSymbol = (iconName: string): string => {
     const iconMap: { [key: string]: string } = {
       'user': '👤',
       'person': '👤',
@@ -32,15 +52,61 @@ const Icon: React.FC<IconProps> = ({
       'eye-off': '🙈',
       'visibility': '👁️',
       'visibility-off': '🙈',
+      'home': '🏠',
+      'search': '🔍',
+      'heart': '❤️',
+      'star': '⭐',
+      'settings': '⚙️',
+      'menu': '☰',
+      'close': '✕',
+      'check': '✓',
+      'plus': '+',
+      'minus': '−',
+      'arrow-left': '←',
+      'arrow-right': '→',
+      'arrow-up': '↑',
+      'arrow-down': '↓',
     };
     
     return iconMap[iconName] || '?';
   };
 
+  // Render based on icon family
+  if (family === 'poppins') {
+    return (
+      <Text style={[
+        styles.icon, 
+        { 
+          fontSize: size, 
+          color,
+          fontFamily: getPoppinsFontFamily(weight)
+        }, 
+        style
+      ]}>
+        {getPoppinsIconSymbol(name)}
+      </Text>
+    );
+  }
+
+  if (family === 'ionicons') {
+    return (
+      <Ionicons 
+        name={name as any} 
+        size={size} 
+        color={color} 
+        style={style}
+      />
+    );
+  }
+
+  // Default to FontAwesome
   return (
-    <Text style={[styles.icon, { fontSize: size, color }, style]}>
-      {getIconSymbol(name)}
-    </Text>
+    <FontAwesome 
+      name={name as any} 
+      size={size} 
+      color={color} 
+      style={style}
+    />
   );
 };
 
