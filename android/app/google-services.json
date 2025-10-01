@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "519080708543",
+    "project_id": "localfindz-ef003",
+    "storage_bucket": "localfindz-ef003.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:519080708543:android:f453bd7f69d10bb9e8f90a",
+        "android_client_info": {
+          "package_name": "com.localfindz"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC3c0hRm1I3zMd3_kEnhu6zz6jWCJzLeCc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
