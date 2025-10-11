@@ -1,35 +1,35 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import SplashScreen from '../screens/unAuth/SplashScreen';
-import Welcome from '../screens/unAuth/Welcome';
-import SignUp from '../screens/unAuth/SignUp';
-import Login from '../screens/unAuth/Login';
+import Home from '../screens/Home';
+
+import BusinessProfileSetup from '../screens/auth/business/businessProfileSetup';
+import PurposeSelection from '../screens/auth/purposeSelection';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 const AuthStack = createNativeStackNavigator();
+const BottomTab = createBottomTabNavigator();
 
-export default function UnAuthNavigator() {
+export default function AuthNavigator() {
   return (
     <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStack.Screen name="PurposeSelection" component={PurposeSelection} />
       <AuthStack.Screen
-        name="SplashScreen"
-        component={SplashScreen}
-        options={{ title: 'SplashScreen' }}
+        name="BusinessProfileSetup"
+        component={BusinessProfileSetup}
       />
+      <AuthStack.Screen name="Home" component={Home} />
       <AuthStack.Screen
-        name="Welcome"
-        component={Welcome}
-        options={{ title: 'Welcome' }}
-      />
-      <AuthStack.Screen
-        name="SignUp"
-        component={SignUp}
-        options={{ title: 'SignUp' }}
-      />
-      <AuthStack.Screen
-        name="Login"
-        component={Login}
-        options={{ title: 'Login' }}
+        name="BottomTabNavigator"
+        component={BottomTabNavigator}
       />
     </AuthStack.Navigator>
+  );
+}
+
+function BottomTabNavigator() {
+  return (
+    <BottomTab.Navigator>
+      <BottomTab.Screen name="Home" component={Home} />
+    </BottomTab.Navigator>
   );
 }

@@ -68,6 +68,7 @@ export const COLORS = {
   gray: '#C9C9C9',
   darkGray: '#6A707C',
   textSecondary: 'pink',
+  blue: '#246BFD',
 };
 
 // Firebase Constants

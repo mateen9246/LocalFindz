@@ -18,6 +18,7 @@ interface CustomTextInputProps extends TextInputProps {
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   onRightIconPress?: () => void;
+  inputContainerStyle?: any;
 }
 
 const TextInput: React.FC<CustomTextInputProps> = ({
@@ -29,11 +30,12 @@ const TextInput: React.FC<CustomTextInputProps> = ({
   rightIcon,
   onRightIconPress,
   style,
+  inputContainerStyle,
   ...props
 }) => {
   return (
     <View style={[styles.container, containerStyle]}>
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, inputContainerStyle]}>
         {leftIcon && (
           <TouchableOpacity disabled={true}>{leftIcon}</TouchableOpacity>
         )}

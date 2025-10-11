@@ -24,11 +24,16 @@ export default function Welcome({ navigation }) {
           >
             <PoppinsText style={styles.ghostText}>Sign Up</PoppinsText>
           </TouchableOpacity>
-          <View style={[styles.primaryBtn, { marginTop: hp(2) }]}>
-            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Image source={assets.blurBg} resizeMode="contain" />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={{ marginTop: hp(2) }}
+            onPress={() => navigation.navigate('Login')}
+          >
+            <Image
+              source={assets.blurBg}
+              style={{ width: wp(90) }}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     </GradientBackground>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Text, Platform, StatusBar } from 'react-native';
+import { StyleSheet, View, Text, Platform, StatusBar, LogBox } from 'react-native';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -24,11 +24,12 @@ function StatusBarPlaceHolder() {
 }
 
 function App() {
+  LogBox.ignoreAllLogs();
   return (
     <Provider store={store}>
       <PersistGate loading={<LoadingScreen />} persistor={persistor}>
         <SafeAreaProvider>
-          <StatusBarPlaceHolder />
+          {/* <StatusBarPlaceHolder /> */}
           <Navigation />
         </SafeAreaProvider>
       </PersistGate>

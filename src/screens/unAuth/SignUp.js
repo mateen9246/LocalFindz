@@ -203,11 +203,10 @@ const styles = StyleSheet.create({
   },
   socialRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
     marginVertical: hp(1.5),
   },
   socialButton: {
-    width: wp(30),
+    width: wp(28),
     height: hp(7),
     borderRadius: wp(3),
     borderWidth: 0.5,
@@ -230,7 +229,7 @@ const styles = StyleSheet.create({
     width: wp(100),
     height: wp(100),
     position: 'absolute',
-    bottom: hp(-16),
+    bottom: hp(-17),
     right: wp(10),
   },
 });

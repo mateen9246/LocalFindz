@@ -10,6 +10,19 @@ const assets = {
   eye: require('./images/Vector (1).png'),
   lockIcon: require('./images/Vector.png'),
   bottomShape: require('./images/Vector 3.png'),
+  backIcon: require('./images/backIcon.png'),
+  store: require('./images/store.png'),
+  usercard: require('./images/usercard.png'),
+  homeIcon: require('./images/Vector (4).png'),
+  phoneIcon: require('./images/Vector (5).png'),
+  hashtagIcon: require('./images/Vector (6).png'),
+  descriptionIcon: require('./images/Vector (7).png'),
+  taxIcon: require('./images/Group.png'),
+  mapIcon: require('./images/Group 1171275846.png'),
+  chevronDownIcon: require('./images/Vector (12).png'),
+  categoryIcon: require('./images/Vector (8).png'),
+  uploadIcon: require('./images/Vector (10).png'),
+  tagIcon: require('./images/Vector (11).png'),
 };
 
 export default assets;
