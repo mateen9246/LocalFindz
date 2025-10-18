@@ -20,7 +20,7 @@ export default function Login({ navigation }) {
 
   useEffect(() => {
     dispatch(clearError());
-  }, [dispatch]);
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated) {

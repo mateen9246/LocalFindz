@@ -3,12 +3,12 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   StatusBar,
   Platform,
   Image,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { hp, wp } from '../../../utils/responsive';
 import { COLORS } from '../../../constants';
@@ -18,10 +18,16 @@ import {
   CustomButton,
   Icon,
   TagInput,
+  ImagePicker,
+  DocumentPicker,
 } from '../../../components';
 import assets from '../../../assets/index';
 import BusinessHours from './BusinessHours';
 import CustomPicker from '../../../components/Dropdown';
+import { validateBusinessForm } from '../../../utils/validator';
+import { firebaseService } from '../../../services/firebase';
+import { COLLECTIONS } from '../../../services/firebase';
+import { SafeAreaView } from 'react-native-safe-area-context';
 // import MapView, { Circle, Marker } from 'react-native-maps';
 
 /**
@@ -31,49 +37,193 @@ import CustomPicker from '../../../components/Dropdown';
  * business information including name, contact details, tax information,
  * and description. Features a 5-step progress indicator.
  */
-const BusinessProfileSetup = () => {
+const BusinessProfileSetup = ({ navigation, route }) => {
   const title = [
     'Tell Us About Your Business',
     'Where is your store located',
     'Set standard hours',
     'Showcase your store',
   ];
+  console.log(route);
+  const { params } = route;
   const items = [
     { label: 'Restaurant', value: 'restaurant' },
     { label: 'Café', value: 'cafe' },
     { label: 'Shop', value: 'shop' },
   ];
   const [selected, setSelected] = useState('');
-  const [businessData, setBusinessData] = useState({
-    businessName: '',
-    contactNumber: '',
-    taxId: '',
-    registrationNo: '',
-    description: '',
-    zipCode: '',
-    tags: [],
-    businessHours: {
-      sunday: { isOpen: false, opening: '', closing: '' },
-      monday: { isOpen: false, opening: '', closing: '' },
-      tuesday: { isOpen: false, opening: '', closing: '' },
-      wednesday: { isOpen: false, opening: '', closing: '' },
-      thursday: { isOpen: false, opening: '', closing: '' },
-      friday: { isOpen: false, opening: '', closing: '' },
-      saturday: { isOpen: false, opening: '', closing: '' },
-    },
-  });
+  const [dataErrors, setDataErrors] = useState({});
+  const [businessData, setBusinessData] = useState(
+    !!params?.editBusiness
+      ? params.editBusiness
+      : {
+          businessName: '',
+          contactNumber: '',
+          taxId: '',
+          registrationNo: '',
+          description: '',
+          zipCode: '',
+          tags: [],
+          images: [],
+          pdfDocument: null,
+          selectedCategory: '',
+          businessHours: {
+            sunday: { isOpen: false, opening: '', closing: '' },
+            monday: { isOpen: false, opening: '', closing: '' },
+            tuesday: { isOpen: false, opening: '', closing: '' },
+            wednesday: { isOpen: false, opening: '', closing: '' },
+            thursday: { isOpen: false, opening: '', closing: '' },
+            friday: { isOpen: false, opening: '', closing: '' },
+            saturday: { isOpen: false, opening: '', closing: '' },
+          },
+        },
+  );
   const [currentStep, setCurrentStep] = useState(1);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadedImageUrls, setUploadedImageUrls] = useState([]);
+  const [uploadedPdfUrl, setUploadedPdfUrl] = useState(null);
+
+  const uploadImages = async imageUris => {
+    if (!imageUris || imageUris.length === 0) {
+      return { success: true, data: [] };
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const result = await firebaseService.uploadMultipleImages(
+        imageUris,
+        'business-images',
+        progress => {
+          setUploadProgress(progress);
+        },
+      );
+
+      if (result.success) {
+        setUploadedImageUrls(result.data);
+        return result;
+      } else {
+        Alert.alert('Upload Error', result.error);
+        return result;
+      }
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      Alert.alert('Upload Error', 'Failed to upload images. Please try again.');
+      return { success: false, error: 'Upload failed' };
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+  const uploadPDF = async (documentUri, fileName) => {
+    if (!documentUri) {
+      return { success: true, data: null };
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const result = await firebaseService.uploadPDF(
+        documentUri,
+        fileName,
+        'business-documents',
+        progress => {
+          setUploadProgress(progress);
+        },
+      );
+
+      if (result.success) {
+        setUploadedPdfUrl(result.data);
+        return result;
+      } else {
+        Alert.alert('Upload Error', result.error);
+        return result;
+      }
+    } catch (error) {
+      console.error('Error uploading PDF:', error);
+      Alert.alert('Upload Error', 'Failed to upload PDF. Please try again.');
+      return { success: false, error: 'Upload failed' };
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const handleFormSubmission = async () => {
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      // uncomment this when you want to upload images and pdf
+      // const imageUploadResult = await uploadImages(businessData.images);
+      // if (!imageUploadResult.success) {
+      //   return;
+      // }
+      // const pdfUploadResult = await uploadPDF(
+      //   businessData.pdfDocument?.uri,
+      //   businessData.pdfDocument?.name || 'business-document.pdf',
+      // );
+      // if (!pdfUploadResult.success) {
+      //   return;
+      // }
+
+      // Prepare final business data with uploaded URLs
+      const finalBusinessData = {
+        ...businessData,
+        images: uploadedImageUrls,
+        pdfDocument: uploadedPdfUrl,
+        userId: firebaseService.getCurrentUser().uid,
+      };
+      firebaseService.addDocument(COLLECTIONS.BUSINESSES, finalBusinessData);
+      Alert.alert('Success', 'Business profile created successfully!', [
+        {
+          text: 'OK',
+          onPress: () => {
+            navigation.replace('BottomTabNavigator', {
+              screen: 'Dashboard',
+              params: { businesses: [finalBusinessData] },
+            });
+          },
+        },
+      ]);
+    } catch (error) {
+      console.error('Error in form submission:', error);
+      Alert.alert(
+        'Error',
+        'Failed to create business profile. Please try again.',
+      );
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
   /**
    * Handle continue button press
    */
   const handleContinue = () => {
-    // TODO: Implement navigation to next step
-    setCurrentStep(currentStep + 1);
+    if (currentStep == 4) {
+      const { isValid, errors, firstErrorKey } =
+        validateBusinessForm(businessData);
+      console.log(isValid, errors, firstErrorKey);
+
+      if (!isValid) {
+        Alert.alert(
+          'Error',
+          `Can't submit the form due to reason: ${errors[firstErrorKey]}`,
+        );
+        setDataErrors(errors);
+      } else {
+        handleFormSubmission();
+      }
+    } else {
+      setCurrentStep(currentStep + 1);
+    }
   };
 
-  /**
-   * Render the progress indicator with 5 steps
-   */
   const renderProgressIndicator = () => {
     const steps = [1, 2, 3, 4];
 
@@ -115,29 +265,6 @@ const BusinessProfileSetup = () => {
           </TouchableOpacity>
         ))}
       </View>
-    );
-  };
-  const handleImageUpload = () => {
-    // Placeholder for image upload functionality
-    Alert.alert(
-      'Image Upload',
-      'Image upload functionality would be implemented here',
-    );
-  };
-
-  const handlePdfUpload = () => {
-    // Placeholder for PDF upload functionality
-    Alert.alert(
-      'PDF Upload',
-      'PDF upload functionality would be implemented here',
-    );
-  };
-
-  const handleCategorySelect = () => {
-    // Placeholder for category selection
-    Alert.alert(
-      'Category Selection',
-      'Category selection would be implemented here',
     );
   };
 
@@ -184,7 +311,11 @@ const BusinessProfileSetup = () => {
               containerStyle={styles.inputContainer}
               inputStyle={styles.input}
             />
-
+            {dataErrors.businessName && (
+              <PoppinsText style={styles.error}>
+                {dataErrors.businessName}
+              </PoppinsText>
+            )}
             {/* Contact Number */}
             <CustomTextInput
               placeholder="Contact Number"
@@ -203,7 +334,11 @@ const BusinessProfileSetup = () => {
               containerStyle={styles.inputContainer}
               inputStyle={styles.input}
             />
-
+            {dataErrors.contactNumber && (
+              <PoppinsText style={styles.error}>
+                {dataErrors.contactNumber}
+              </PoppinsText>
+            )}
             {/* Tax ID and Registration No. Row */}
             <View style={styles.rowContainer}>
               <CustomTextInput
@@ -223,6 +358,16 @@ const BusinessProfileSetup = () => {
                 inputStyle={styles.input}
                 inputContainerStyle={{ width: wp(35) }}
               />
+              {dataErrors.taxId && (
+                <PoppinsText
+                  style={[
+                    { position: 'absolute', bottom: hp(-1.5) },
+                    styles.error,
+                  ]}
+                >
+                  {dataErrors.taxId}
+                </PoppinsText>
+              )}
               <CustomTextInput
                 placeholder="Registration No."
                 value={businessData.registrationNo}
@@ -240,6 +385,16 @@ const BusinessProfileSetup = () => {
                 inputStyle={[styles.input, { width: wp(40) }]}
                 inputContainerStyle={{ width: wp(53) }}
               />
+              {dataErrors.registrationNo && (
+                <PoppinsText
+                  style={[
+                    { position: 'absolute', bottom: hp(-1.5), right: 0 },
+                    styles.error,
+                  ]}
+                >
+                  {dataErrors.registrationNo}
+                </PoppinsText>
+              )}
             </View>
 
             {/* Description */}
@@ -270,6 +425,11 @@ const BusinessProfileSetup = () => {
                 paddingVertical: hp(2),
               }}
             />
+            {dataErrors.description && (
+              <PoppinsText style={styles.error}>
+                {dataErrors.description}
+              </PoppinsText>
+            )}
           </View>
         )}
         {currentStep === 2 && (
@@ -293,6 +453,11 @@ const BusinessProfileSetup = () => {
                 alignItems: 'center',
               }}
             />
+            {dataErrors.zipCode && (
+              <PoppinsText style={styles.error}>
+                {dataErrors.zipCode}
+              </PoppinsText>
+            )}
             <Image
               source={assets.mapIcon}
               style={styles.mapIcon}
@@ -349,15 +514,35 @@ const BusinessProfileSetup = () => {
               }}
               parentBusinessHours={businessData.businessHours}
             />
+            {dataErrors.businessHours && (
+              <PoppinsText style={styles.error}>
+                {dataErrors.businessHours}
+              </PoppinsText>
+            )}
           </View>
         )}
         {currentStep === 4 && (
           <View style={styles.formSection}>
+            {/* Image Picker Section */}
+            <ImagePicker
+              onImagesSelected={images =>
+                setBusinessData({ ...businessData, images })
+              }
+              maxImages={3}
+              containerStyle={styles.imagePickerContainer}
+            />
+            {dataErrors.images && (
+              <PoppinsText style={styles.error}>
+                {dataErrors.images}
+              </PoppinsText>
+            )}
             <CustomPicker
               placeholder="Choose a category"
               items={items}
-              value={selected}
-              onValueChange={val => setSelected(val)}
+              value={businessData.selectedCategory}
+              onValueChange={val =>
+                setBusinessData({ ...businessData, selectedCategory: val })
+              }
               leftIcon={
                 <Image
                   source={assets.categoryIcon}
@@ -366,7 +551,11 @@ const BusinessProfileSetup = () => {
                 />
               }
             />
-
+            {dataErrors.selectedCategory && (
+              <PoppinsText style={styles.error}>
+                {dataErrors.selectedCategory}
+              </PoppinsText>
+            )}
             <TagInput
               placeholder="Add tags..."
               tags={businessData.tags}
@@ -384,39 +573,59 @@ const BusinessProfileSetup = () => {
             <PoppinsText style={styles.tagsInstruction}>
               You can add up to 5 tags
             </PoppinsText>
-
-            <TouchableOpacity onPress={handlePdfUpload}>
-              <View style={styles.pdfUploadContent}>
+            {dataErrors.tags && (
+              <PoppinsText style={styles.error}>{dataErrors.tags}</PoppinsText>
+            )}
+            <DocumentPicker
+              onDocumentSelected={document =>
+                setBusinessData({ ...businessData, pdfDocument: document })
+              }
+              placeholder="PDF file of menu"
+              leftIcon={
                 <Icon
                   name="paperclip"
                   size={20}
                   color={COLORS.textInput}
                   family="fontawesome"
                 />
-                <PoppinsText style={styles.pdfUploadText}>
-                  PDF file of menu
-                </PoppinsText>
+              }
+              rightIcon={
                 <Icon
                   name="upload"
                   size={20}
                   color={COLORS.primary}
                   family="fontawesome"
                 />
-              </View>
-            </TouchableOpacity>
+              }
+              maxFileSize={15} // 15MB limit for PDF files
+            />
+            {dataErrors.pdfDocument && (
+              <PoppinsText style={styles.error}>
+                {dataErrors.pdfDocument}
+              </PoppinsText>
+            )}
           </View>
         )}
       </ScrollView>
 
       {/* Continue Button */}
       <View style={styles.buttonContainer}>
+        {isUploading && (
+          <View style={styles.uploadProgressContainer}>
+            <ActivityIndicator size="small" color={COLORS.primary} />
+            <PoppinsText style={styles.uploadProgressText}>
+              Uploading... {Math.round(uploadProgress)}%
+            </PoppinsText>
+          </View>
+        )}
         <CustomButton
-          title="Continue"
+          title={isUploading ? 'Uploading...' : 'Continue'}
           onPress={handleContinue}
           variant="primary"
           size="large"
           fullWidth
           style={styles.continueButton}
+          disabled={isUploading}
         />
       </View>
     </SafeAreaView>
@@ -435,7 +644,12 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? hp(2) : hp(4),
     paddingBottom: hp(10), // Space for button
   },
-
+  error: {
+    color: COLORS.secondary,
+    fontSize: hp(1.5),
+    fontFamily: 'Poppins-Regular',
+    marginTop: hp(0.2),
+  },
   // Progress Indicator Styles
   progressContainer: {
     width: wp(80),
@@ -569,24 +783,8 @@ const styles = StyleSheet.create({
     marginBottom: hp(2),
     fontFamily: 'Poppins-Regular',
   },
-  pdfUploadContent: {
-    backgroundColor: COLORS.textInputBg,
-    height: hp('7'),
-    width: wp('90'),
-    flexDirection: 'row',
-    alignItems: 'center',
-    color: COLORS.textColorPr,
-    borderWidth: 1,
-    borderColor: COLORS.textInputBorder,
-    borderRadius: 8,
-    paddingHorizontal: 15,
-  },
-  pdfUploadText: {
-    flex: 1,
-    fontSize: hp(1.9),
-    color: COLORS.textInput,
-    marginLeft: wp(5),
-    fontFamily: 'Poppins-Regular',
+  imagePickerContainer: {
+    marginBottom: hp(3),
   },
 
   // Button Styles
@@ -603,6 +801,19 @@ const styles = StyleSheet.create({
   },
   continueButton: {
     borderRadius: 12,
+  },
+  uploadProgressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: hp(2),
+    paddingVertical: hp(1),
+  },
+  uploadProgressText: {
+    fontSize: hp(1.6),
+    color: COLORS.primary,
+    fontFamily: 'Poppins-Medium',
+    marginLeft: wp(2),
   },
 });
 

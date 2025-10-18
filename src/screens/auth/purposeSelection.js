@@ -1,27 +1,38 @@
 import { defaultSerializeQueryArgs } from '@reduxjs/toolkit/query';
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-  SafeAreaView,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import assets from '../../assets/index';
 import { COLORS } from '../../constants';
 import { hp, wp } from '../../utils/responsive';
 import { CustomButton } from '../../components';
 import { logoutUser } from '../../store/slices/authSlice';
 import { useAppDispatch } from '../../hooks';
+import { COLLECTIONS, firebaseService } from '../../services';
 function PurposeSelection({ navigation }) {
   const [selected, setSelected] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const dispatch = useAppDispatch();
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (selected === 'explore') {
-      navigation.navigate('Home');
+      navigation.replace('ExplorerHome');
     } else if (selected === 'showcase') {
-      navigation.navigate('BusinessProfileSetup');
+      setIsLoading(true);
+      const businesses = await firebaseService.queryCollection(
+        COLLECTIONS.BUSINESSES,
+        'userId',
+        '==',
+        firebaseService.getCurrentUser().uid,
+      );
+      if (businesses.docs.length > 0) {
+        navigation.replace('BottomTabNavigator', {
+          screen: 'Dashboard',
+          params: { businesses: businesses.docs.map(doc => doc.data()) },
+        });
+      } else {
+        navigation.replace('BusinessProfileSetup');
+      }
+      setIsLoading(false);
     }
   };
   function logout() {
@@ -93,30 +104,15 @@ function PurposeSelection({ navigation }) {
         style={styles.continueButton}
         title="Continue"
         onPress={handleContinue}
-        disabled={!selected}
+        disabled={!selected || isLoading}
+        loading={isLoading}
+        loadingColor={COLORS.primary}
         textStyle={[
           styles.continueText,
           selected ? styles.continueTextActive : styles.continueTextDisabled,
         ]}
         variant={selected ? 'primary' : 'secondary'}
       />
-      {/* <TouchableOpacity
-        style={[
-          styles.continueButton,
-          selected ? styles.continueActive : styles.continueDisabled,
-        ]}
-        disabled={!selected}
-        onPress={handleContinue}
-      >
-        <Text
-          style={[
-            styles.continueText,
-            selected ? styles.continueTextActive : styles.continueTextDisabled,
-          ]}
-        >
-          Continue
-        </Text>
-      </TouchableOpacity> */}
     </SafeAreaView>
   );
 }

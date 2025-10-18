@@ -10,19 +10,11 @@ import { hp, wp } from '../../../utils/responsive';
 import { COLORS } from '../../../constants';
 import { PoppinsText } from '../../../components';
 import DateTimePicker from '@react-native-community/datetimepicker';
-/**
- * Business Hours Screen
- *
- * This screen allows users to set their standard business hours
- * for each day of the week. Features a 5-step progress indicator
- * with step 3 active.
- */
-const BusinessHours = ({ onBusinessHoursChange, parentBusinessHours }) => {
-  // Initial business hours data
 
+const BusinessHours = ({ onBusinessHoursChange, parentBusinessHours }) => {
   useEffect(() => {
     setBusinessHours(parentBusinessHours);
-  }, [businessHours]);
+  }, [parentBusinessHours]);
 
   const [businessHours, setBusinessHours] = useState({
     sunday: { isOpen: false, opening: '', closing: '' },
@@ -34,34 +26,26 @@ const BusinessHours = ({ onBusinessHoursChange, parentBusinessHours }) => {
     saturday: { isOpen: false, opening: '', closing: '' },
   });
 
-  // DateTimePicker state
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedDay, setSelectedDay] = useState('');
-  const [selectedField, setSelectedField] = useState(''); // 'opening' or 'closing'
+  const [selectedField, setSelectedField] = useState('');
   const [selectedTime, setSelectedTime] = useState(new Date());
 
-  // Time formatting utility
+  // 24h formatting: returns "HH:mm"
   const formatTime = date => {
     if (!date) return '';
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours % 12 || 12;
-    const displayMinutes = minutes.toString().padStart(2, '0');
-    return `${displayHours}:${displayMinutes} ${ampm}`;
+    const h = date.getHours().toString().padStart(2, '0');
+    const m = date.getMinutes().toString().padStart(2, '0');
+    return `${h}:${m}`;
   };
 
-  // Parse time string to Date object
+  // Parse "HH:mm" to Date
   const parseTimeString = timeString => {
     if (!timeString) return new Date();
-    const [time, ampm] = timeString.split(' ');
-    const [hours, minutes] = time.split(':');
-    let hour24 = parseInt(hours);
-    if (ampm === 'PM' && hour24 !== 12) hour24 += 12;
-    if (ampm === 'AM' && hour24 === 12) hour24 = 0;
-    const date = new Date();
-    date.setHours(hour24, parseInt(minutes), 0, 0);
-    return date;
+    const [h, m] = timeString.split(':').map(Number);
+    const d = new Date();
+    d.setHours(h || 0, m || 0, 0, 0);
+    return d;
   };
 
   const handleToggleDay = day => {
@@ -71,13 +55,14 @@ const BusinessHours = ({ onBusinessHoursChange, parentBusinessHours }) => {
       [day]: {
         ...prev[day],
         isOpen: !prev[day].isOpen,
-        opening: !prev[day].isOpen ? '09:00 AM' : '',
-        closing: !prev[day].isOpen ? '11:00 AM' : '',
+        opening: !prev[day].isOpen ? '09:00' : '',
+        closing: !prev[day].isOpen ? '11:00' : '',
       },
     };
     setBusinessHours(newBusinessHours);
     onBusinessHoursChange(newBusinessHours);
   };
+
   const days = [
     { key: 'sunday', label: 'Sunday' },
     { key: 'monday', label: 'Monday' },
@@ -87,9 +72,7 @@ const BusinessHours = ({ onBusinessHoursChange, parentBusinessHours }) => {
     { key: 'friday', label: 'Friday' },
     { key: 'saturday', label: 'Saturday' },
   ];
-  /**
-   * Handle time change
-   */
+
   const handleTimeChange = (day, field, time) => {
     const prev = { ...businessHours };
     const newBusinessHours = {
@@ -103,10 +86,8 @@ const BusinessHours = ({ onBusinessHoursChange, parentBusinessHours }) => {
     onBusinessHoursChange(newBusinessHours);
   };
 
-  // Handle opening time picker
   const handleTimePickerPress = (day, field) => {
     if (!businessHours[day].isOpen) return;
-
     setSelectedDay(day);
     setSelectedField(field);
     const currentTime = businessHours[day][field];
@@ -114,22 +95,15 @@ const BusinessHours = ({ onBusinessHoursChange, parentBusinessHours }) => {
     setShowTimePicker(true);
   };
 
-  // Handle DateTimePicker change
-  const handleDateTimePickerChange = (event, selectedDate) => {
-    if (Platform.OS === 'android') {
-      setShowTimePicker(false);
-    }
-
+  const handleDateTimePickerChange = (_event, selectedDate) => {
+    if (Platform.OS === 'android') setShowTimePicker(false);
     if (selectedDate && selectedDay && selectedField) {
-      const formattedTime = formatTime(selectedDate);
+      const formattedTime = formatTime(selectedDate); // "HH:mm"
       handleTimeChange(selectedDay, selectedField, formattedTime);
     }
   };
 
-  // Handle DateTimePicker dismiss (iOS)
-  const handleDateTimePickerDismiss = () => {
-    setShowTimePicker(false);
-  };
+  const handleDateTimePickerDismiss = () => setShowTimePicker(false);
 
   return (
     <View>
@@ -152,18 +126,17 @@ const BusinessHours = ({ onBusinessHoursChange, parentBusinessHours }) => {
         </PoppinsText>
       </View>
 
-      {/* Table Rows */}
+      {/* Rows */}
       {days.map(day => {
         const dayData = businessHours[day.key];
         return (
           <View key={day.key} style={styles.tableRow}>
-            {/* Day Column */}
             <View style={styles.dayColumn}>
               <PoppinsText style={styles.dayText} weight="regular">
                 {day.label}
               </PoppinsText>
             </View>
-            {/* Status Column */}
+
             <View style={styles.statusColumn}>
               <Switch
                 value={dayData.isOpen}
@@ -173,7 +146,7 @@ const BusinessHours = ({ onBusinessHoursChange, parentBusinessHours }) => {
                 ios_backgroundColor={COLORS.gray}
               />
             </View>
-            {/* Opening Column */}
+
             <View style={[styles.timeColumn, { marginLeft: wp(5) }]}>
               <TouchableOpacity
                 style={[
@@ -194,7 +167,7 @@ const BusinessHours = ({ onBusinessHoursChange, parentBusinessHours }) => {
                 </PoppinsText>
               </TouchableOpacity>
             </View>
-            {/* Closing Column */}
+
             <View style={styles.timeColumn}>
               <TouchableOpacity
                 style={[
@@ -218,6 +191,7 @@ const BusinessHours = ({ onBusinessHoursChange, parentBusinessHours }) => {
           </View>
         );
       })}
+
       {showTimePicker && (
         <DateTimePicker
           value={selectedTime}
@@ -225,6 +199,7 @@ const BusinessHours = ({ onBusinessHoursChange, parentBusinessHours }) => {
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           onChange={handleDateTimePickerChange}
           onTouchCancel={handleDateTimePickerDismiss}
+          is24Hour={true} // Android: force 24h picker
         />
       )}
     </View>
@@ -232,57 +207,27 @@ const BusinessHours = ({ onBusinessHoursChange, parentBusinessHours }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-  },
-  scrollView: {
-    flex: 1,
-  },
+  container: { flex: 1, backgroundColor: COLORS.white },
+  scrollView: { flex: 1 },
   scrollContent: {
     paddingHorizontal: wp('5%'),
     paddingTop: Platform.OS === 'ios' ? hp('2%') : hp('4%'),
-    paddingBottom: hp('10%'), // Space for button
+    paddingBottom: hp('10%'),
   },
-
-  // Progress Indicator Styles
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: hp('4%'),
   },
-  progressStepContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  progressDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  progressDotActive: {
-    backgroundColor: COLORS.primary,
-  },
-  progressDotInactive: {
-    backgroundColor: COLORS.gray,
-  },
-  progressLine: {
-    width: wp('15%'),
-    height: 2,
-    marginHorizontal: wp('2%'),
-  },
-  progressLineActive: {
-    backgroundColor: COLORS.primary,
-  },
-  progressLineInactive: {
-    backgroundColor: COLORS.gray,
-  },
-
-  // Header Styles
-  headerSection: {
-    marginBottom: hp('4%'),
-  },
+  progressStepContainer: { flexDirection: 'row', alignItems: 'center' },
+  progressDot: { width: 12, height: 12, borderRadius: 6 },
+  progressDotActive: { backgroundColor: COLORS.primary },
+  progressDotInactive: { backgroundColor: COLORS.gray },
+  progressLine: { width: wp('15%'), height: 2, marginHorizontal: wp('2%') },
+  progressLineActive: { backgroundColor: COLORS.primary },
+  progressLineInactive: { backgroundColor: COLORS.gray },
+  headerSection: { marginBottom: hp('4%') },
   title: {
     fontSize: hp('3%'),
     color: COLORS.textColorPr,
@@ -295,17 +240,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: hp('2.5%'),
   },
-
-  tableHeader: {
-    flexDirection: 'row',
-    marginBottom: hp('2%'),
-  },
+  tableHeader: { flexDirection: 'row', marginBottom: hp('2%') },
   headerText: {
     fontSize: hp('1.5%'),
     color: COLORS.darkGray,
     flex: 2,
     marginHorizontal: hp(1),
-    // backgroundColor:'red',
     textAlign: 'center',
   },
   tableRow: {
@@ -315,22 +255,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.textInputBorder,
   },
-  dayColumn: {
-    width: wp(25),
-    alignItems: 'flex-start',
-  },
-  statusColumn: {
-    width: wp(10),
-    alignItems: 'center',
-  },
-  timeColumn: {
-    width: wp(25),
-    alignItems: 'center',
-  },
-  dayText: {
-    fontSize: hp('1.5%'),
-    color: COLORS.textColorPr,
-  },
+  dayColumn: { width: wp(25), alignItems: 'flex-start' },
+  statusColumn: { width: wp(10), alignItems: 'center' },
+  timeColumn: { width: wp(25), alignItems: 'center' },
+  dayText: { fontSize: hp('1.5%'), color: COLORS.textColorPr },
   timeInput: {
     backgroundColor: COLORS.textInputBg,
     borderRadius: 4,
@@ -340,18 +268,9 @@ const styles = StyleSheet.create({
     minWidth: wp('20%'),
     alignItems: 'center',
   },
-  timeInputDisabled: {
-    opacity: 0.5,
-  },
-  timeText: {
-    fontSize: hp('1.6%'),
-    color: COLORS.textInput,
-  },
-  timeTextDisabled: {
-    color: COLORS.darkGray,
-  },
-
-  // Button Styles
+  timeInputDisabled: { opacity: 0.5 },
+  timeText: { fontSize: hp('1.6%'), color: COLORS.textInput },
+  timeTextDisabled: { color: COLORS.darkGray },
   buttonContainer: {
     position: 'absolute',
     bottom: 0,
@@ -363,9 +282,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.textInputBorder,
   },
-  continueButton: {
-    borderRadius: 12,
-  },
+  continueButton: { borderRadius: 12 },
 });
 
 export default BusinessHours;

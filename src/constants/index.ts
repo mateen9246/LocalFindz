@@ -56,6 +56,8 @@ export const SUCCESS_MESSAGES = {
 
 export const COLORS = {
   primary: '#9900CC',
+  primaryLight: '#F4EEFF',
+  primaryLight2: '#8280FF',
   secondary: '#5E007D',
   white: '#ffffff',
   black: '#000000',
@@ -69,6 +71,14 @@ export const COLORS = {
   darkGray: '#6A707C',
   textSecondary: 'pink',
   blue: '#246BFD',
+  greenLight: '#EFFBF5',
+  greenLight2: '#4AD991',
+  orange:"#F85959",
+  orangeLight: '#FFEEEE',
+  orangeLight2: '#FF6060',
+  blueLight: '#E9F2FF',
+  blueLight2: '#589CFF',
+  green: '#7AE882',
 };
 
 // Firebase Constants

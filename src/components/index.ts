@@ -5,3 +5,5 @@ export { default as BlurBackground } from './BlurView';
 export { default as PoppinsText } from './PoppinsText';
 export { default as Icon } from './Icon';
 export { default as TagInput } from './TagInput';
+export { default as ImagePicker } from './ImagePicker';
+export { default as DocumentPicker } from './DocumentPicker';

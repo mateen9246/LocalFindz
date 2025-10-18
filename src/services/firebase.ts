@@ -3,6 +3,7 @@ import firestore, {
   FirebaseFirestoreTypes,
 } from '@react-native-firebase/firestore';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import storage, { FirebaseStorageTypes } from '@react-native-firebase/storage';
 import {
   User,
   LoginCredentials,
@@ -20,6 +21,7 @@ export const COLLECTIONS = {
   LOCATIONS: 'locations',
   REVIEWS: 'reviews',
   FAVORITES: 'favorites',
+  BUSINESSES: 'businesses',
 } as const;
 
 // Firebase error codes
@@ -46,6 +48,7 @@ export const FIREBASE_ERRORS = {
 class FirebaseService {
   private db = firestore();
   private auth = auth();
+  private privateStorage = storage();
 
   // ==================== AUTH METHODS ====================
 
@@ -141,7 +144,7 @@ class FirebaseService {
       // await this.setDocument(COLLECTIONS.USER_PREFERENCES, userCredential.user.uid, defaultPreferences);
 
       const token = await userCredential.user.getIdToken();
-console.log(token);
+      console.log(token);
       return {
         success: true,
         data: {
@@ -591,6 +594,203 @@ console.log(token);
     }
   }
 
+  // ==================== STORAGE METHODS ====================
+
+  /**
+   * Upload image to Firebase Storage
+   */
+  async uploadImage(
+    fileUri: string,
+    fileName: string,
+    folder: string = 'images',
+    onProgress?: (progress: number) => void,
+  ): Promise<ApiResponse<string>> {
+    try {
+      const user = this.getCurrentUser();
+      if (!user) {
+        throw new Error('No authenticated user');
+      }
+
+      const timestamp = Date.now();
+      const uniqueFileName = `${timestamp}_${fileName}`;
+      const storagePath = `${folder}/${user.uid}/${uniqueFileName}`;
+
+      const reference = this.privateStorage.ref(storagePath);
+      const task = reference.putFile(fileUri);
+
+      // Listen for upload progress
+      if (onProgress) {
+        task.on('state_changed', snapshot => {
+          const progress =
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          onProgress(progress);
+        });
+      }
+
+      await task;
+      const downloadURL = await reference.getDownloadURL();
+
+      return {
+        success: true,
+        data: downloadURL,
+        message: 'Image uploaded successfully',
+      };
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      return {
+        success: false,
+        data: '',
+        error: 'Failed to upload image. Please try again.',
+      };
+    }
+  }
+
+  /**
+   * Upload PDF document to Firebase Storage
+   */
+  async uploadPDF(
+    fileUri: string,
+    fileName: string,
+    folder: string = 'documents',
+    onProgress?: (progress: number) => void,
+  ): Promise<ApiResponse<string>> {
+    try {
+      const user = this.getCurrentUser();
+      if (!user) {
+        throw new Error('No authenticated user');
+      }
+
+      const timestamp = Date.now();
+      const uniqueFileName = `${timestamp}_${fileName}`;
+      const storagePath = `${folder}/${user.uid}/${uniqueFileName}`;
+
+      const reference = this.privateStorage.ref(storagePath);
+      const task = reference.putFile(fileUri);
+
+      // Listen for upload progress
+      if (onProgress) {
+        task.on('state_changed', snapshot => {
+          const progress =
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          onProgress(progress);
+        });
+      }
+
+      await task;
+      const downloadURL = await reference.getDownloadURL();
+
+      return {
+        success: true,
+        data: downloadURL,
+        message: 'PDF uploaded successfully',
+      };
+    } catch (error: any) {
+      console.error('Error uploading PDF:', error);
+      return {
+        success: false,
+        data: '',
+        error: 'Failed to upload PDF. Please try again.',
+      };
+    }
+  }
+
+  /**
+   * Upload multiple images
+   */
+  async uploadMultipleImages(
+    fileUris: string[],
+    folder: string = 'images',
+    onProgress?: (overallProgress: number) => void,
+  ): Promise<ApiResponse<string[]>> {
+    try {
+      const uploadPromises = fileUris.map(async (uri, index) => {
+        const fileName = `image_${index + 1}.jpg`;
+        const result = await this.uploadImage(uri, fileName, folder);
+
+        if (onProgress) {
+          const progress = ((index + 1) / fileUris.length) * 100;
+          onProgress(progress);
+        }
+
+        return result;
+      });
+
+      const results = await Promise.all(uploadPromises);
+      const failedUploads = results.filter(result => !result.success);
+
+      if (failedUploads.length > 0) {
+        return {
+          success: false,
+          data: [],
+          error: `${failedUploads.length} image(s) failed to upload`,
+        };
+      }
+
+      const downloadURLs = results.map(result => result.data);
+
+      return {
+        success: true,
+        data: downloadURLs,
+        message: 'All images uploaded successfully',
+      };
+    } catch (error: any) {
+      console.error('Error uploading multiple images:', error);
+      return {
+        success: false,
+        data: [],
+        error: 'Failed to upload images. Please try again.',
+      };
+    }
+  }
+
+  /**
+   * Delete file from Firebase Storage
+   */
+  async deleteFile(downloadURL: string): Promise<ApiResponse<boolean>> {
+    try {
+      const reference = this.privateStorage.refFromURL(downloadURL);
+      await reference.delete();
+
+      return {
+        success: true,
+        data: true,
+        message: 'File deleted successfully',
+      };
+    } catch (error: any) {
+      console.error('Error deleting file:', error);
+      return {
+        success: false,
+        data: false,
+        error: 'Failed to delete file',
+      };
+    }
+  }
+
+  /**
+   * Get file metadata
+   */
+  async getFileMetadata(
+    downloadURL: string,
+  ): Promise<ApiResponse<FirebaseStorageTypes.FullMetadata>> {
+    try {
+      const reference = this.privateStorage.refFromURL(downloadURL);
+      const metadata = await reference.getMetadata();
+
+      return {
+        success: true,
+        data: metadata,
+        message: 'File metadata retrieved successfully',
+      };
+    } catch (error: any) {
+      console.error('Error getting file metadata:', error);
+      return {
+        success: false,
+        data: null as any,
+        error: 'Failed to get file metadata',
+      };
+    }
+  }
+
   // ==================== UTILITY METHODS ====================
 
   /**
@@ -734,6 +934,11 @@ export const {
   subscribeToQuery,
   batchWrite,
   runTransaction,
+  uploadImage,
+  uploadPDF,
+  uploadMultipleImages,
+  deleteFile,
+  getFileMetadata,
   getServerTimestamp,
   createDocumentReference,
   createCollectionReference,
