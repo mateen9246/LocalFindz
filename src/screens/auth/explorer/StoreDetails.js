@@ -15,19 +15,38 @@ import { COLORS } from '../../../constants';
 import assets from '../../../assets';
 import { hp, wp } from '../../../utils/responsive';
 import LinearGradient from 'react-native-linear-gradient';
-
-const { width, height } = Dimensions.get('window');
+import { firebaseService } from '../../../services';
+import { COLLECTIONS } from '../../../services/firebase';
+import moment from 'moment';
+import helperFunctions from '../../../services/helperFunctions';
+import { fetchUserBookmarks, handleBookmark } from '../../../services/bookmark';
 
 export default function StoreDetails({ route, navigation }) {
   const { id } = route.params;
   useEffect(() => {
     getStoreDetails();
   }, []);
+  useEffect(() => {
+    getStoreOwner();
+    getBookmarkStatus();
+  }, [store]);
 
-  const [selectedDay, setSelectedDay] = useState('Thu');
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(null);
+  const [store, setStore] = useState({ businessHours: {} });
+  const [storeOwner, setStoreOwner] = useState({});
+  const [selectedDay, setSelectedDay] = useState(
+    moment(new Date()).format('ddd'),
+  );
 
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const days = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
   const operatingHours = '9:00AM - 11:00PM';
 
   const comments = [
@@ -56,9 +75,72 @@ export default function StoreDetails({ route, navigation }) {
     },
   ];
 
-  function getStoreDetails() {
-    console.log('getStoreDetails', id);
+  async function getStoreDetails() {
+    const res = await firebaseService.getDocument(COLLECTIONS.BUSINESSES, id);
+    const data = res.data();
+    setStore(data);
+    const day = helperFunctions.openingClosingFinder(data, true);
+    const formattedDay = day.charAt(0).toUpperCase() + day.slice(1);
+    setSelectedDay(formattedDay);
   }
+  async function getBookmarkStatus() {
+    const db = await firebaseService.returnDbInstance();
+    const data = await db
+      .collection(COLLECTIONS.USER_BOOKMARKS)
+      .where('storeId', '==', id)
+      .where('userId', '==', firebaseService.getCurrentUser().uid)
+      .get();
+    if (data.docs.length > 0) {
+      setIsBookmarked({ ...data.docs[0].data(), id: data.docs[0].id });
+    } else {
+      setIsBookmarked(null);
+    }
+  }
+  async function updateBookmarkStatus() {
+    try {
+      await firebaseService.updateDocument(
+        COLLECTIONS.USER_BOOKMARKS,
+        isBookmarked.id,
+        {
+          isBookmarked: !isBookmarked.isBookmarked,
+        },
+      );
+      setIsBookmarked({
+        ...isBookmarked,
+        isBookmarked: !isBookmarked.isBookmarked,
+      });
+    } catch (error) {
+      console.error('Error updating bookmark status:', error);
+    }
+  }
+  console.log('===>', isBookmarked);
+  async function getStoreOwner() {
+    const res = await firebaseService.getDocument(
+      COLLECTIONS.USERS,
+      store?.userId,
+    );
+    setStoreOwner(res.data());
+    addView();
+  }
+
+  async function addView() {
+    const db = await firebaseService.returnDbInstance();
+    const data = await db
+      .collection(COLLECTIONS.STORE_VIEWS)
+      .where('storeId', '==', id)
+      .where('userId', '==', firebaseService.getCurrentUser().uid)
+      .get();
+    if (data.docs.length > 0) {
+      return;
+    }
+    await db.collection(COLLECTIONS.STORE_VIEWS).add({
+      storeId: id,
+      userId: firebaseService.getCurrentUser().uid,
+      timestamp: firebaseService.getServerTimestamp(),
+      date: new Date(),
+    });
+  }
+
   return (
     <LinearGradient
       colors={[COLORS.primary, COLORS.secondary]}
@@ -72,20 +154,32 @@ export default function StoreDetails({ route, navigation }) {
       >
         {/* Image Gallery Section */}
         <View style={styles.imageSection}>
-          <Image source={assets.hotel} style={styles.mainImage} />
+          <Image
+            source={!!store?.images ? { uri: store.images[0] } : assets.hotel}
+            style={styles.mainImage}
+          />
 
           {/* Navigation Arrow */}
-          <TouchableOpacity style={styles.navArrow}>
+          <TouchableOpacity
+            style={styles.navArrow}
+            onPress={() => navigation.goBack()}
+          >
             <Image source={assets.backChevron} style={styles.backChevron} />
           </TouchableOpacity>
 
           {/* Bookmark Button */}
           <TouchableOpacity
             style={styles.bookmarkButton}
-            onPress={() => setIsBookmarked(!isBookmarked)}
+            onPress={updateBookmarkStatus}
           >
-            <Image
-              source={assets.bookmarksIconWhite}
+            <Icon
+              name={
+                !!isBookmarked && !!isBookmarked.isBookmarked
+                  ? 'bookmark'
+                  : 'bookmark-o'
+              }
+              size={20}
+              color={isBookmarked ? COLORS.danger : COLORS.white}
               style={styles.backChevron}
             />
           </TouchableOpacity>
@@ -94,7 +188,7 @@ export default function StoreDetails({ route, navigation }) {
         {/* Restaurant Information Section */}
         <View style={styles.infoSection}>
           <PoppinsText style={styles.restaurantName}>
-            Kayu Lama Restaurant
+            {store?.businessName || 'N/A'}
           </PoppinsText>
 
           <View style={styles.addressContainer}>
@@ -103,26 +197,27 @@ export default function StoreDetails({ route, navigation }) {
               style={styles.locationPinIconWhite}
             />
             <PoppinsText style={styles.address}>
-              No.5 Jalan Karang Kembar, England
+              {store?.address || 'N/A'}
             </PoppinsText>
           </View>
 
           <PoppinsText style={styles.description}>
-            Lorem ipsum dolor sit amet consectetur. Eget tincidunt duis pharetra
-            nunc tristique purus. Cursus pretium odio ipsum feugiat. Sagittis
-            dui nibh ac tincidunt et. Fusce mattis etiam purus tempus at... Read
-            More
+            {store?.description || 'N/A'}
           </PoppinsText>
 
           <View style={styles.infoRow}>
             <View style={styles.infoItem}>
               <Image source={assets.distanceIcon} style={styles.distanceIcon} />
-              <PoppinsText style={styles.infoText}>3 miles away</PoppinsText>
+              <PoppinsText style={styles.infoText}>
+                {store.distance || 'N/A'} miles away
+              </PoppinsText>
             </View>
             <View style={styles.separator} />
             <View style={styles.infoItem}>
               <Image source={assets.ratingIcon} style={styles.distanceIcon} />
-              <PoppinsText style={styles.infoText}>4.9 Rating</PoppinsText>
+              <PoppinsText style={styles.infoText}>
+                {store.rating || 'N/A'} Rating
+              </PoppinsText>
             </View>
 
             <View style={styles.separator} />
@@ -131,7 +226,13 @@ export default function StoreDetails({ route, navigation }) {
                 source={assets.timeIconWhite}
                 style={styles.distanceIcon}
               />
-              <PoppinsText style={styles.infoText}>9:00am-11:00pm</PoppinsText>
+              <PoppinsText style={styles.infoText}>
+                {helperFunctions.openingClosingFinder(store).openingTime ||
+                  'N/A'}{' '}
+                -{' '}
+                {helperFunctions.openingClosingFinder(store).closingTime ||
+                  'N/A'}
+              </PoppinsText>
             </View>
           </View>
         </View>
@@ -140,18 +241,23 @@ export default function StoreDetails({ route, navigation }) {
         <View style={styles.ownerSection}>
           <Image source={assets.profile} style={styles.ownerImage} />
           <View style={styles.ownerInfo}>
-            <PoppinsText style={styles.ownerName}>John Smith</PoppinsText>
-            <PoppinsText style={styles.ownerTitle}>owner</PoppinsText>
+            <PoppinsText style={styles.ownerName}>
+              {storeOwner?.email?.includes('@') &&
+              storeOwner?.email?.split('@')?.length > 0
+                ? storeOwner?.email.split('@')[0]
+                : 'N/A'}
+            </PoppinsText>
+            <PoppinsText style={styles.ownerTitle}>Owner</PoppinsText>
           </View>
 
           <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity style={styles.actionButton} onPress={null}>
               <Image
                 source={assets.commentsIconWhite}
                 style={styles.commentsIconWhite}
               />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity style={styles.actionButton} onPress={null}>
               <Image
                 source={assets.phoneIconWhite}
                 style={styles.commentsIconWhite}
@@ -167,39 +273,57 @@ export default function StoreDetails({ route, navigation }) {
             showsHorizontalScrollIndicator={false}
             style={styles.daysScrollView}
           >
-            {days.map(day => (
-              <TouchableOpacity
-                key={day}
-                style={styles.dayButton}
-                onPress={() => setSelectedDay(day)}
-              >
-                <ImageBackground
-                  source={assets.bookmarkBg}
-                  style={styles.bookmarkBg}
-                  resizeMode="contain"
-                  imageStyle={{ opacity: selectedDay != day ? 0.5 : 1 }}
+            {days.map(day => {
+              const isOpen = store?.businessHours[day.toLowerCase()]?.isOpen
+                ? true
+                : false;
+              const openingTime = store?.businessHours[day.toLowerCase()]
+                ?.opening
+                ? store?.businessHours[day.toLowerCase()]?.opening
+                : 'N/A';
+              const closingTime = store?.businessHours[day.toLowerCase()]
+                ?.closing
+                ? store?.businessHours[day.toLowerCase()]?.closing
+                : 'N/A';
+              return (
+                <TouchableOpacity
+                  key={day}
+                  style={styles.dayButton}
+                  onPress={() => setSelectedDay(day)}
+                  disabled={!isOpen}
                 >
+                  <ImageBackground
+                    source={assets.bookmarkBg}
+                    style={styles.bookmarkBg}
+                    resizeMode="contain"
+                    imageStyle={{ opacity: selectedDay != day ? 0.5 : 1 }}
+                  >
+                    <PoppinsText
+                      style={[
+                        styles.dayText,
+                        selectedDay === day && styles.selectedDayText,
+                      ]}
+                    >
+                      {day.slice(0, 3)}
+                    </PoppinsText>
+                  </ImageBackground>
                   <PoppinsText
                     style={[
-                      styles.dayText,
-                      selectedDay === day && styles.selectedDayText,
+                      styles.hoursText,
+                      selectedDay === day && styles.selectedHoursText,
                     ]}
                   >
-                    {day}
+                    {openingTime != 'N/A'
+                      ? helperFunctions.formatToAmPm(openingTime)
+                      : 'N/A'}
+                    {'\n'}
+                    {closingTime != 'N/A'
+                      ? helperFunctions.formatToAmPm(closingTime)
+                      : 'N/A'}
                   </PoppinsText>
-                </ImageBackground>
-                <PoppinsText
-                  style={[
-                    styles.hoursText,
-                    selectedDay === day && styles.selectedHoursText,
-                  ]}
-                >
-                  {operatingHours.split(' - ')[0]}
-                  {'\n'}
-                  {operatingHours.split(' - ')[1]}
-                </PoppinsText>
-              </TouchableOpacity>
-            ))}
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
         </View>
 

@@ -63,10 +63,18 @@ const assets = {
   profile: require('./images/Profile.png'),
   bookmarkBg: require('./images/Vector 14.png'),
   boostIcon: require('./images/Boost.png'),
-  backIcon: require('./images/Back.png'),
+  backRoundIcon: require('./images/Back.png'),
   likeIcon: require('./images/Like.png'),
   starIcon: require('./images/Star.png'),
   messageIcon: require('./images/X.png'),
+  helpIcon: require('./images/Group 1171275862.png'),
+  shieldIcon: require('./images/Group 1171275896.png'),
+  notificationBellIcon: require('./images/mingcute_notification-line.png'),
+  privacyIcon: require('./images/Vector (42).png'),
+  referIcon: require('./images/Vector (43).png'),
+  helpCenterIcon: require('./images/Vector (44).png'),
+  privacyPolicyIcon: require('./images/Vector (45).png'),
+  logoutIcon: require('./images/Vector (46).png'),
 };
 
 export default assets;

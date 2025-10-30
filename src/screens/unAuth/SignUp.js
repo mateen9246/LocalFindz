@@ -8,7 +8,7 @@ import {
   Image,
 } from 'react-native';
 // import Icon from 'react-native-vector-icons/FontAwesome';
-import { firebaseService } from '../../services/firebase';
+import { COLLECTIONS, firebaseService } from '../../services/firebase';
 import { CustomTextInput, CustomButton, PoppinsText } from '../../components';
 import { COLORS } from '../../constants';
 import { hp, wp } from '../../utils/responsive';
@@ -29,6 +29,12 @@ export default function SignUp({ navigation }) {
       setLoading(true);
       const result = await firebaseService.signUp({ email, password });
       if (result?.success) {
+        await firebaseService.addDocument(COLLECTIONS.USERS, {
+          email,
+          id: result?.data?.user?.id,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
         navigation.navigate('Login');
       } else {
         Alert.alert('Sign up failed', result?.error || 'Try again.');

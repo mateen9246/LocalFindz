@@ -22,6 +22,8 @@ export const COLLECTIONS = {
   REVIEWS: 'reviews',
   FAVORITES: 'favorites',
   BUSINESSES: 'businesses',
+  USER_BOOKMARKS: 'userBookmarks',
+  STORE_VIEWS: 'storeViews',
 } as const;
 
 // Firebase error codes
@@ -55,6 +57,9 @@ class FirebaseService {
   /**
    * Sign in with email and password
    */
+  async returnDbInstance() {
+    return this.db;
+  }
   async signIn(
     credentials: LoginCredentials,
   ): Promise<ApiResponse<{ user: User; token: string }>> {
@@ -949,4 +954,5 @@ export const {
   disableNetwork,
   clearPersistence,
   handleError,
+  returnDbInstance,
 } = firebaseService;

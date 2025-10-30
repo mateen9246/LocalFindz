@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -14,20 +14,66 @@ import { PoppinsText, Icon } from '../../../components';
 import assets from '../../../assets';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { hp, wp } from '../../../utils/responsive';
-import { firebaseService } from '../../../services';
-
+import { COLLECTIONS, firebaseService } from '../../../services';
+import helperFunctions from '../../../services/helperFunctions';
+import { LineChart } from 'react-native-chart-kit';
+const dummyGraphData = {
+  labels: [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ],
+  datasets: [
+    {
+      data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      color: (opacity = 1) => `rgb(153,0 ,204,1)`,
+      strokeWidth: 2, // optional
+    },
+  ],
+};
+const chartConfig = {
+  backgroundGradientFrom: COLORS.white,
+  backgroundGradientFromOpacity: 1,
+  backgroundGradientTo: COLORS.white,
+  backgroundGradientToOpacity: 1,
+  fillShadowGradientFrom: COLORS.primary,
+  fillShadowGradientTo: COLORS.primaryLight,
+  color: (opacity = 1) => `rgb(153,0 ,204,${opacity})`,
+  labelColor: (opacity = 1) => `rgba(0, 0, 0, 0.5)`,
+  strokeWidth: 1, // optional, default 3
+  barPercentage: 0.2,
+  useShadowColorFromDataset: false, // optional
+  propsForBackgroundLines: { fill: COLORS.primary },
+  propsForDots: {
+    r: '3',
+    strokeWidth: '1',
+    stroke: COLORS.primary,
+    fill: COLORS.white,
+  },
+};
 const BusinessStoreDetails = ({ navigation, route }) => {
   const { store } = route.params || {};
-  console.log('store', store);
   const [isStoreAvailable, setIsStoreAvailable] = useState(store.isOpen);
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const [graphData, setGraphData] = useState(store.graphData || dummyGraphData);
   const [storeData, setStoreData] = useState({
     businessName: store?.businessName || 'Kayu Lama Restaurant',
     address: store?.address || 'N/A',
     category: store?.selectedCategory || 'Food & Drink',
     ratings: store?.ratings || '4.9',
-    openingTime: openingClosingFinder().openingTime || '09:00 AM',
-    closingTime: openingClosingFinder().closingTime || '11:30 PM',
+    openingTime:
+      helperFunctions.openingClosingFinder(store).openingTime || '09:00 AM',
+    closingTime:
+      helperFunctions.openingClosingFinder(store).closingTime || '11:30 PM',
     description: store?.description || 'N/A',
     tags: store?.tags || [
       'Restaurant',
@@ -40,39 +86,18 @@ const BusinessStoreDetails = ({ navigation, route }) => {
     bookmarks: store?.bookmarks || '5K',
     image: store?.images?.[0] || assets.storeImage,
   });
-  // Sample data - replace with actual data from store parameter
-  function openingClosingFinder() {
-    const days = Object.keys(store?.businessHours);
-    for (const day of days) {
-      if (store?.businessHours[day]?.isOpen) {
-        return {
-          openingTime: store?.businessHours[day]?.opening,
-          closingTime: store?.businessHours[day]?.closing,
-        };
-      }
-    }
-  }
+
   async function toggleStoreAvailability() {
     try {
+      setIsStoreAvailable(!isStoreAvailable);
       await firebaseService.updateDocument('businesses', store?.id, {
         isOpen: !isStoreAvailable,
       });
-      setIsStoreAvailable(!isStoreAvailable);
     } catch (error) {
+      setIsStoreAvailable(isStoreAvailable);
       console.error('Error toggling store availability:', error);
     }
   }
-  const graphData = [
-    { value: 5, label: 'Aug 9' },
-    { value: 8, label: 'Aug 16' },
-    { value: 12, label: 'Aug 23' },
-    { value: 10, label: 'Aug 30' },
-    { value: 15, label: 'Sep 6' },
-    { value: 20, label: 'Sep 9' },
-  ];
-
-  const maxValue = 25;
-  const graphHeight = hp(15);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -244,7 +269,7 @@ const BusinessStoreDetails = ({ navigation, route }) => {
 
           {/* Graph Section */}
           <View style={styles.section}>
-            <View style={styles.graphContainer}>
+            {/* <View style={styles.graphContainer}>
               {graphData.map((point, index) => {
                 const height = (point.value / maxValue) * graphHeight;
                 const width = wp(90) / graphData.length;
@@ -265,7 +290,17 @@ const BusinessStoreDetails = ({ navigation, route }) => {
                   </View>
                 );
               })}
-            </View>
+            </View> */}
+            <LineChart
+              data={
+                !!graphData?.datasets?.[0]?.data ? graphData : dummyGraphData
+              }
+              width={wp(90)}
+              height={hp(25)}
+              chartConfig={chartConfig}
+              withDots={true}
+              withInnerLines={false}
+            />
           </View>
 
           {/* Tags Section */}
@@ -398,6 +433,12 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: hp(3),
     width: wp(90),
+  },
+  dotContent: {
+    width: wp(2),
+    height: wp(2),
+    backgroundColor: COLORS.primary,
+    borderRadius: wp(1),
   },
   sectionTitle: {
     fontSize: hp(2),

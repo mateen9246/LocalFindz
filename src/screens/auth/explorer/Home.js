@@ -10,20 +10,23 @@ import {
   SafeAreaView,
   FlatList,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { PoppinsText, Icon, CustomTextInput } from '../../../components';
 import { COLORS } from '../../../constants';
 import { wp, hp } from '../../../utils/responsive';
 import assets from '../../../assets';
-import { useIsFocused } from '@react-navigation/native';
 import { COLLECTIONS, firebaseService } from '../../../services';
+import { fetchUserBookmarks, handleBookmark } from '../../../services/bookmark';
 
 export default function Home({ navigation }) {
   const [recommendations, setRecommendations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [categorySelected, setCategorySelected] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [userBookmarks, setUserBookmarks] = useState([]);
+
   async function fetchRecommendations() {
     setIsLoading(true);
     const data = await firebaseService.getCollection(
@@ -31,8 +34,10 @@ export default function Home({ navigation }) {
       10,
     );
     setRecommendations(data.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+    setUserBookmarks(await fetchUserBookmarks());
     setIsLoading(false);
   }
+
   useEffect(() => {
     fetchRecommendations();
   }, []);
@@ -94,19 +99,33 @@ export default function Home({ navigation }) {
       image: assets.serviceIcon,
     },
   ];
+
   function renderListRecommendationItem({ item }) {
+    const isBookmarked = userBookmarks.some(
+      bookmark => bookmark.storeId === item.id && !!bookmark.isBookmarked,
+    );
     return (
       <TouchableOpacity
         key={item.id}
         style={styles.recommendationCard}
         onPress={() => navigation.navigate('StoreDetails', { id: item.id })}
       >
-        <Image source={assets.hotel} style={styles.cardImage} />
-        <TouchableOpacity style={styles.bookmarkButton}>
+        <Image
+          source={!!item?.images ? { uri: item.images[0] } : assets.hotel}
+          style={styles.cardImage}
+        />
+        <TouchableOpacity
+          style={styles.bookmarkButton}
+          onPress={() =>
+            handleBookmark(item, userBookmarks, async () => {
+              setUserBookmarks(await fetchUserBookmarks());
+            })
+          }
+        >
           <Icon
-            name={item.isBookmarked ? 'bookmark' : 'bookmark-o'}
+            name={isBookmarked ? 'bookmark' : 'bookmark-o'}
             size={20}
-            color={COLORS.white}
+            color={isBookmarked ? COLORS.danger : COLORS.white}
           />
         </TouchableOpacity>
         <View style={styles.cardContent}>
@@ -186,6 +205,12 @@ export default function Home({ navigation }) {
         <ScrollView
           style={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading}
+              onRefresh={fetchRecommendations}
+            />
+          }
         >
           {/* Popular Destinations */}
           <View style={styles.section}>
@@ -239,7 +264,7 @@ export default function Home({ navigation }) {
             <PoppinsText
               style={[
                 styles.sectionTitle,
-                { marginTop: hp(-2), marginBottom: 0 },
+                { marginTop: hp(-3), marginBottom: hp(1) },
               ]}
             >
               Near from you
@@ -324,7 +349,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginLeft: wp(5),
     borderRadius: hp(2),
-    marginVertical: hp(2),
+    marginVertical: hp(1),
   },
   filterButton: {
     backgroundColor: COLORS.primary,
@@ -360,7 +385,7 @@ const styles = StyleSheet.create({
     fontSize: hp(2.5),
     color: COLORS.white,
     fontWeight: 'bold',
-    marginBottom: hp(2),
+    marginBottom: hp(1),
   },
   categoriesScroll: {
     marginHorizontal: -wp(5),
@@ -368,11 +393,11 @@ const styles = StyleSheet.create({
   },
   categoryButton: {
     alignItems: 'center',
-    width: wp(25),
+    width: wp(22),
   },
   categoryIconContainer: {
-    width: wp(20),
-    height: wp(20),
+    width: wp(17),
+    height: wp(17),
     borderRadius: wp(10),
     backgroundColor: COLORS.white,
     alignItems: 'center',
@@ -424,7 +449,8 @@ const styles = StyleSheet.create({
   cardImage: {
     width: '100%',
     height: '80%',
-    resizeMode: 'contain',
+    resizeMode: 'cover',
+    borderRadius: hp(2),
   },
   bookmarkButton: {
     position: 'absolute',
@@ -436,7 +462,7 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     position: 'absolute',
-    bottom: hp(4),
+    bottom: hp(3),
   },
   cardTitle: {
     fontSize: hp(2),

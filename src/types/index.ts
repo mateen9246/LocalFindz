@@ -195,3 +195,144 @@ export interface Notification {
   read: boolean;
   createdAt: string;
 }
+
+// Store/Business types
+export interface Store {
+  id: string;
+  name: string;
+  description: string;
+  address: string;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+  category: string;
+  rating: number;
+  reviewCount: number;
+  photos: string[];
+  ownerId: string;
+  ownerName: string;
+  ownerAvatar?: string;
+  contact?: {
+    phone?: string;
+    website?: string;
+    email?: string;
+  };
+  hours?: {
+    [key: string]: {
+      open: string;
+      close: string;
+      closed?: boolean;
+    };
+  };
+  amenities: string[];
+  priceRange?: 1 | 2 | 3 | 4;
+  distance?: number;
+  
+  // View tracking
+  viewCount: number;
+  lastViewedAt?: string;
+  stats?: {
+    dailyViews: number;
+    weeklyViews: number;
+    monthlyViews: number;
+  };
+  
+  createdAt: string;
+  updatedAt: string;
+}
+
+// View tracking types
+export interface StoreView {
+  id: string;
+  userId?: string;
+  userAgent?: string;
+  ipAddress?: string;
+  timestamp: any; // Firestore Timestamp
+  date: string; // "2024-01-15"
+  hour: number; // 0-23
+  dayOfWeek: number; // 0 (Sunday) to 6 (Saturday)
+  week: string; // "2024-W03"
+  month: string; // "2024-01"
+  year: number;
+  sessionId?: string;
+  referrer?: string;
+  createdAt: any; // Firestore Timestamp
+}
+
+export interface ViewAggregate {
+  id: string;
+  period: 'hourly' | 'daily' | 'weekly' | 'monthly';
+  date: string;
+  hour?: number;
+  week?: string;
+  month?: string;
+  year: number;
+  viewCount: number;
+  uniqueUsers: number;
+  lastUpdatedAt: any; // Firestore Timestamp
+  createdAt: any; // Firestore Timestamp
+}
+
+// Comment types
+export interface CommentReply {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  text: string;
+  parentCommentId: string;
+  edited: boolean;
+  editedAt?: string;
+  likes: number;
+  likedBy: string[];
+  deleted: boolean;
+  deletedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StoreComment {
+  id: string;
+  storeId: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  text: string;
+  edited: boolean;
+  editedAt?: string;
+  replies: CommentReply[];
+  likes: number;
+  likedBy: string[];
+  deleted: boolean;
+  deletedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Bookmark types
+export interface UserBookmark {
+  id: string;
+  userId: string;
+  storeId: string;
+  storeName: string;
+  storeImage?: string;
+  storeAddress: string;
+  storeCategory: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// View graph data types
+export interface ViewGraphDataPoint {
+  date: string;
+  views: number;
+  uniqueUsers?: number;
+}
+
+export interface ViewGraphData {
+  period: 'daily' | 'weekly' | 'monthly' | 'hourly';
+  dataPoints: ViewGraphDataPoint[];
+  totalViews: number;
+  averageViews: number;
+}

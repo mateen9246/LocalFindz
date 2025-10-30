@@ -17,28 +17,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { hp, wp } from '../../../utils/responsive';
 import { COLLECTIONS, firebaseService } from '../../../services';
 import BottomTab from '../../../components/BottomTab';
+import helperFunctions from '../../../services/helperFunctions';
 const Dashboard = ({ navigation, route }) => {
   const { businesses } = route.params || [];
+
   useEffect(() => {
     getStores();
   }, []);
-  async function getStores() {
-    if (!businesses || businesses.length == 0) {
-      const data = await firebaseService.queryCollection(
-        COLLECTIONS.BUSINESSES,
-        'userId',
-        '==',
-        firebaseService.getCurrentUser().uid,
-      );
-      setStores(
-        data.docs.map(doc => {
-          return { ...doc.data(), id: doc.id };
-        }),
-      );
-    } else {
-      setStores(businesses);
-    }
-  }
+
   const [selectedLocation, setSelectedLocation] = useState('Birmingham');
   const [searchText, setSearchText] = useState('');
   const [stores, setStores] = useState([]);
@@ -84,6 +70,49 @@ const Dashboard = ({ navigation, route }) => {
       iconBg: COLORS.blueLight2,
     },
   ]);
+
+  function findAnalytics(stores) {
+    const prevAnalytics = [...analyticsData];
+    prevAnalytics[0].value = stores.length;
+    prevAnalytics[1].value = stores.reduce((acc, curr) => acc + curr.views, 0);
+    prevAnalytics[3].value = stores.reduce(
+      (acc, curr) => acc + curr.bookmarks,
+      0,
+    );
+    setAnalyticsData(prevAnalytics);
+  }
+
+  async function getStores() {
+    if (!businesses || businesses.length == 0) {
+      const data = await firebaseService.queryCollection(
+        COLLECTIONS.BUSINESSES,
+        'userId',
+        '==',
+        firebaseService.getCurrentUser().uid,
+      );
+      const storeData = data.docs.map(doc => {
+        return { ...doc.data(), id: doc.id };
+      });
+      const storesWithViews = await Promise.all(
+        storeData.map(store => calculatViewsAggregation(store)),
+      );
+      const storesWithBookmarks = await Promise.all(
+        storesWithViews.map(store => calculateBookmarks(store)),
+      );
+      setStores(storesWithBookmarks);
+      findAnalytics(storesWithBookmarks);
+    } else {
+      const storesWithViews = await Promise.all(
+        businesses.map(store => calculatViewsAggregation(store)),
+      );
+      const storesWithBookmarks = await Promise.all(
+        storesWithViews.map(store => calculateBookmarks(store)),
+      );
+      setStores(storesWithBookmarks);
+      findAnalytics(storesWithBookmarks);
+    }
+  }
+
   const renderAnalyticsCard = item => (
     <View
       key={item.id}
@@ -130,6 +159,7 @@ const Dashboard = ({ navigation, route }) => {
       </View>
     </View>
   );
+
   const renderStoreCard = (store, index) => (
     <TouchableOpacity
       key={index}
@@ -208,16 +238,68 @@ const Dashboard = ({ navigation, route }) => {
       </View>
     </TouchableOpacity>
   );
+
   function handleDeleteStore(store) {
     Alert.alert('Delete Store', 'Are you sure you want to delete this store?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', onPress: () => handleDeleteStoreConfirm(store) },
     ]);
   }
+
   function handleDeleteStoreConfirm(store) {
     firebaseService.deleteDocument(COLLECTIONS.BUSINESSES, store.id);
     getStores();
   }
+
+  async function calculatViewsAggregation(store) {
+    try {
+      const data = await firebaseService.queryCollection(
+        COLLECTIONS.STORE_VIEWS,
+        'storeId',
+        '==',
+        store?.id,
+      );
+      const storeViewsData = data.docs.map(doc => {
+        let time = {
+          seconds: doc.data().date._seconds,
+          nanoseconds: doc.data().date._nanoseconds,
+        };
+        const fireBaseTime = new Date(
+          time.seconds * 1000 + time.nanoseconds / 1000000,
+        );
+        const date = fireBaseTime.toISOString();
+        return { ...doc.data(), id: doc.id, date: date };
+      });
+      const graphData = helperFunctions.buildMonthlyViewsChartData(
+        storeViewsData,
+        new Date().getFullYear(),
+      );
+
+      return {
+        ...store,
+        views: graphData.datasets[0].data.reduce((acc, curr) => acc + curr, 0),
+        graphData: graphData,
+      };
+    } catch (error) {
+      console.error('Error calculating views aggregation:', error);
+      return { ...store, views: 0, graphData: {} };
+    }
+  }
+
+  async function calculateBookmarks(store) {
+    try {
+      const db = await firebaseService.returnDbInstance();
+      const data = await db
+        .collection(COLLECTIONS.USER_BOOKMARKS)
+        .where('storeId', '==', store?.id)
+        .where('isBookmarked', '==', true)
+        .get();
+      return { ...store, bookmarks: data.docs.length };
+    } catch (error) {
+      return { ...store, bookmarks: 0 };
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
@@ -455,6 +537,7 @@ const styles = StyleSheet.create({
   },
   storesList: {
     gap: wp(2),
+    paddingBottom: hp(3),
   },
   storeCard: {
     flexDirection: 'row',

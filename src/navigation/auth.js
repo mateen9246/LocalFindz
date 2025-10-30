@@ -13,6 +13,11 @@ import { COLORS } from '../constants';
 import { hp, wp } from '../utils/responsive';
 import StoreDetails from '../screens/auth/explorer/StoreDetails';
 import BusinessStoreDetails from '../screens/auth/business/BusinessStoreDetails';
+import Profile from '../screens/auth/explorer/Profile';
+import Bookmark from '../screens/auth/explorer/Bookmark';
+import Shops from '../screens/auth/business/Shops';
+import Notifications from '../screens/auth/business/Notifications';
+import OwnerProfile from '../screens/auth/business/OwnerProfile';
 const AuthStack = createNativeStackNavigator();
 
 const Stack = createNativeStackNavigator();
@@ -26,7 +31,7 @@ export default function AuthNavigator() {
       <AuthStack.Screen name="PurposeSelection" component={PurposeSelection} />
       <AuthStack.Screen name="ExplorerHome" component={ExplorerNavigator} />
       <AuthStack.Screen name="Dashboard" component={Dashboard} />
-      <AuthStack.Screen name="Shops" component={Dashboard} />
+      <AuthStack.Screen name="Shops" component={Shops} />
       <AuthStack.Screen
         name="BusinessStoreDetails"
         component={BusinessStoreDetails}
@@ -35,8 +40,8 @@ export default function AuthNavigator() {
         name="BusinessProfileSetup"
         component={BusinessProfileSetup}
       />
-      <AuthStack.Screen name="Notifications" component={Dashboard} />
-      <AuthStack.Screen name="Profile" component={Dashboard} />
+      <AuthStack.Screen name="Notifications" component={Notifications} />
+      <AuthStack.Screen name="OwnerProfile" component={OwnerProfile} />
     </AuthStack.Navigator>
   );
 }
@@ -135,8 +140,8 @@ function ExplorerBottomTabs() {
         }}
       />
       <ExplorerStack.Screen
-        name="Home2"
-        component={Home}
+        name="Bookmark"
+        component={Bookmark}
         options={{
           tabBarLabel: ({ focused }) => (
             <Text
@@ -166,8 +171,8 @@ function ExplorerBottomTabs() {
         }}
       />
       <ExplorerStack.Screen
-        name="Home3"
-        component={Home}
+        name="Profile"
+        component={Profile}
         options={{
           tabBarLabel: ({ focused }) => (
             <Text

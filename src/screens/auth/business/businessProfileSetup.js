@@ -172,6 +172,7 @@ const BusinessProfileSetup = ({ navigation, route }) => {
         images: imageUploadResult.data,
         pdfDocument: pdfUploadResult.data,
         userId: firebaseService.getCurrentUser().uid,
+        isOpen: true,
       };
       firebaseService.addDocument(COLLECTIONS.BUSINESSES, finalBusinessData);
       Alert.alert('Success', 'Business profile created successfully!', [

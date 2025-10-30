@@ -24,66 +24,76 @@ import LinearGradient from 'react-native-linear-gradient';
 import { COLORS } from '../constants';
 import PoppinsText from './PoppinsText';
 import assets from '../assets';
+import { handleBookmark, fetchUserBookmarks } from '../services/bookmark';
+import Icon from './Icon';
 
-const usersStories = [
-  {
-    userId: '1',
-    username: 'VadimNotJustDev',
-    stories: [
-      {
-        uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-images/1.jpg',
-      },
-      // {
-      //   uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-images/2.jpg',
-      // },
-      // {
-      //   uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-images/3.jpg',
-      // },
-    ],
-  },
-  {
-    userId: '2',
-    username: 'Elon',
-    stories: [
-      {
-        uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-images/4.jpeg',
-      },
-      {
-        uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-images/5.jpg',
-      },
-      {
-        uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-images/6.jpg',
-      },
-    ],
-  },
-  {
-    userId: '3',
-    username: 'Alex',
-    stories: [
-      {
-        uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-images/3.jpg',
-      },
-      {
-        uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-images/6.jpg',
-      },
-      {
-        uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-images/7.jpg',
-      },
-    ],
-  },
-];
+// const usersStories = [
+//   {
+//     userId: '1',
+//     username: 'VadimNotJustDev',
+//     stories: [
+//       {
+//         uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-images/1.jpg',
+//       },
+//       // {
+//       //   uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-images/2.jpg',
+//       // },
+//       // {
+//       //   uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-images/3.jpg',
+//       // },
+//     ],
+//   },
+//   {
+//     userId: '2',
+//     username: 'Elon',
+//     stories: [
+//       {
+//         uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-images/4.jpeg',
+//       },
+//       {
+//         uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-images/5.jpg',
+//       },
+//       {
+//         uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-images/6.jpg',
+//       },
+//     ],
+//   },
+//   {
+//     userId: '3',
+//     username: 'Alex',
+//     stories: [
+//       {
+//         uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-images/3.jpg',
+//       },
+//       {
+//         uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-images/6.jpg',
+//       },
+//       {
+//         uri: 'https://notjustdev-dummy.s3.us-east-2.amazonaws.com/vertical-images/7.jpg',
+//       },
+//     ],
+//   },
+// ];
 
 const storyViewDuration = 5 * 1000;
 
-export default function Story() {
+export default function Story({ stories }) {
+  useEffect(() => {
+    fetchBookmarks();
+  }, []);
+  const usersStories = stories;
+  const [userBookmarks, setUserBookmarks] = useState([]);
   const [userIndex, setUserIndex] = useState(0);
   const [storyIndex, setStoryIndex] = useState(0);
 
+  async function fetchBookmarks() {
+    const bookmarks = await fetchUserBookmarks();
+    setUserBookmarks(bookmarks);
+  }
   const progress = useSharedValue(0); // 0 -> 1
 
   const user = usersStories[userIndex];
   const story = user.stories[storyIndex];
-
   useEffect(() => {
     progress.value = 0;
     progress.value = withTiming(1, {
@@ -152,7 +162,6 @@ export default function Story() {
   const indicatorAnimatedStyle = useAnimatedStyle(() => ({
     width: `${progress.value * 100}%`,
   }));
-
   return (
     <Pressable
       style={styles.storyContainer}
@@ -172,7 +181,7 @@ export default function Story() {
         end={{ x: 0, y: 1.5 }}
       />
 
-      <Image source={{ uri: story.uri }} style={styles.image} />
+      <Image source={{ uri: story.images[0] }} style={styles.image} />
       <Pressable style={styles.navPressable} onPress={goToPrevStory} />
       <Pressable
         style={[styles.navPressable, { right: 0 }]}
@@ -197,7 +206,7 @@ export default function Story() {
       </View>
       <View style={styles.indicatorTextContainer}>
         <PoppinsText style={styles.indicatorText}>
-          Kayu Lama Restaurant
+          {story.businessName || 'N/A'}
         </PoppinsText>
         <View style={styles.locationTextView}>
           <Image
@@ -205,7 +214,7 @@ export default function Story() {
             style={styles.locationIcon}
           />
           <PoppinsText style={styles.locationText} weight="regular">
-            Kayu Lama Restaurant
+            {story.address || 'N/A'}
           </PoppinsText>
         </View>
         <View style={styles.cardDetails}>
@@ -216,7 +225,7 @@ export default function Story() {
               style={styles.distanceIcon}
             />
             <PoppinsText style={styles.cardDistance}>
-              {'N/A Miles Away'}
+              {story.distance || 'N/A Miles Away'}
             </PoppinsText>
           </View>
           <View style={styles.cardDistanceContainer}>
@@ -225,12 +234,14 @@ export default function Story() {
               resizeMethod="contain"
               style={styles.cardRatingIcon}
             />
-            <PoppinsText style={styles.cardRating}>{'N/A'}</PoppinsText>
+            <PoppinsText style={styles.cardRating}>
+              {story.rating || 'N/A'}
+            </PoppinsText>
           </View>
         </View>
         <View style={styles.bottomButtonsContainer}>
           <TouchableOpacity onPress={null}>
-            <Image source={assets.backIcon} style={styles.smallIcon} />
+            <Image source={assets.backRoundIcon} style={styles.smallIcon} />
           </TouchableOpacity>
           <TouchableOpacity onPress={null}>
             <Image source={assets.messageIcon} style={styles.bigIcon} />
@@ -238,7 +249,30 @@ export default function Story() {
           <TouchableOpacity onPress={null}>
             <Image source={assets.starIcon} style={styles.smallIcon} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={null}>
+          <TouchableOpacity
+            onPress={() => {
+              handleBookmark(story, userBookmarks, async () => {
+                setUserBookmarks(await fetchUserBookmarks());
+              });
+            }}
+          >
+            {!!userBookmarks.find(
+              bookmark => bookmark.storeId === story.id,
+            ) && (
+              <Icon
+                name="heart"
+                size={24}
+                color={COLORS.white}
+                style={{
+                  position: 'absolute',
+                  top: hp(2.7),
+                  left: wp(6.1),
+                  right: 0,
+                  bottom: 0,
+                  zIndex: 100,
+                }}
+              />
+            )}
             <Image source={assets.likeIcon} style={styles.bigIcon} />
           </TouchableOpacity>
           <TouchableOpacity onPress={null}>

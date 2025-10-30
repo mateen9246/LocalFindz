@@ -90,7 +90,7 @@ export default function BottomTab({ activeTab, navigation }) {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.tabItem}
-          onPress={() => navigation.navigate('Profile')}
+          onPress={() => navigation.navigate('OwnerProfile')}
         >
           <Image
             source={assets.profileIcon}

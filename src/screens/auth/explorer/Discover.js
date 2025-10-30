@@ -1,73 +1,57 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
   TouchableOpacity,
   Image,
   StatusBar,
-  SafeAreaView,
-  ImageBackground,
+  ActivityIndicator,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { PoppinsText, Icon } from '../../../components';
 import { COLORS } from '../../../constants';
 import { wp, hp } from '../../../utils/responsive';
 import Story from '../../../components/Story';
-/**
- * Discover screen component for explorer users
- * Displays a swipeable card interface for discovering restaurants and places
- */
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { COLLECTIONS, firebaseService } from '../../../services';
+
 export default function Discover({ navigation }) {
-  const [isBookmarked, setIsBookmarked] = useState(false);
-  const [isFavorited, setIsFavorited] = useState(false);
-  const [isStarred, setIsStarred] = useState(false);
+  useEffect(() => {
+    fetchRecommendations();
+  }, []);
+  const [listItems, setListItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Sample restaurant data - to be replaced with actual data
-  const restaurantData = {
-    name: 'Kayu Lama Restaurant',
-    address: '2345 Apple Way, San Francisco, CA 8658',
-    distance: '3 Miles Away',
-    rating: '4.9',
-    image: null, // Placeholder - user will replace
-  };
+  async function fetchRecommendations() {
+    try {
+      const snapshot = await firebaseService.getCollection(
+        COLLECTIONS.BUSINESSES,
+        10,
+      );
+      const groupedData = {};
 
-  /**
-   * Handles refresh action
-   */
-  const handleRefresh = () => {
-    // TODO: Implement refresh logic
-    console.log('Refresh pressed');
-  };
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        data.id = doc.id
+        const userId = data.userId;
 
-  /**
-   * Handles chat/message action
-   */
-  const handleChat = () => {
-    // TODO: Implement chat logic
-    console.log('Chat pressed');
-  };
-
-  /**
-   * Handles star/favorite action
-   */
-  const handleStar = () => {
-    setIsStarred(!isStarred);
-  };
-
-  /**
-   * Handles heart/favorite action
-   */
-  const handleHeart = () => {
-    setIsFavorited(!isFavorited);
-  };
-
-  /**
-   * Handles bookmark action
-   */
-  const handleBookmark = () => {
-    setIsBookmarked(!isBookmarked);
-  };
-
+        if (!groupedData[userId]) {
+          groupedData[userId] = {
+            userId,
+            stories: [],
+          };
+        }
+        groupedData[userId].stories.push(data);
+      });
+      const usersStories = Object.values(groupedData);
+      setListItems(usersStories);
+    } catch (error) {
+      console.error('Error fetching businesses:', error);
+      setListItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
@@ -88,7 +72,15 @@ export default function Discover({ navigation }) {
             <View style={styles.notificationDot} />
           </TouchableOpacity>
         </View>
-        <Story />
+        {loading && <ActivityIndicator size="large" color={COLORS.white} />}
+        {!loading && listItems && listItems.length > 0 && (
+          <Story stories={listItems} />
+        )}
+        {!loading && listItems && listItems.length === 0 && (
+          <PoppinsText style={styles.noRecommendationsText}>
+            No recommendations found
+          </PoppinsText>
+        )}
       </LinearGradient>
     </SafeAreaView>
   );
@@ -108,7 +100,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: wp(5),
     paddingVertical: hp(1),
-    marginTop: hp(3),
+    marginTop: hp(1),
   },
   locationContainer: {
     flex: 1,
@@ -258,5 +250,11 @@ const styles = StyleSheet.create({
   },
   bookmarkButton: {
     backgroundColor: COLORS.primary, // Purple
+  },
+  noRecommendationsText: {
+    fontSize: hp(2),
+    color: COLORS.white,
+    textAlign: 'center',
+    marginTop: hp(10),
   },
 });
