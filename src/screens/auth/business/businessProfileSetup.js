@@ -38,20 +38,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
  * and description. Features a 5-step progress indicator.
  */
 const BusinessProfileSetup = ({ navigation, route }) => {
+  const sampleImages = Array.from({ length: 3 }, (_, index) => ({
+    id: `slot-${index}`,
+    uri: null,
+  }));
   const title = [
     'Tell Us About Your Business',
     'Where is your store located',
     'Set standard hours',
     'Showcase your store',
   ];
-  console.log(route);
   const { params } = route;
   const items = [
     { label: 'Restaurant', value: 'restaurant' },
     { label: 'Café', value: 'cafe' },
     { label: 'Shop', value: 'shop' },
   ];
-  const [selected, setSelected] = useState('');
   const [dataErrors, setDataErrors] = useState({});
   const [businessData, setBusinessData] = useState(
     !!params?.editBusiness
@@ -81,8 +83,6 @@ const BusinessProfileSetup = ({ navigation, route }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadedImageUrls, setUploadedImageUrls] = useState([]);
-  const [uploadedPdfUrl, setUploadedPdfUrl] = useState(null);
 
   const uploadImages = async imageUris => {
     if (!imageUris || imageUris.length === 0) {
@@ -102,7 +102,6 @@ const BusinessProfileSetup = ({ navigation, route }) => {
       );
 
       if (result.success) {
-        setUploadedImageUrls(result.data);
         return result;
       } else {
         Alert.alert('Upload Error', result.error);
@@ -136,7 +135,6 @@ const BusinessProfileSetup = ({ navigation, route }) => {
       );
 
       if (result.success) {
-        setUploadedPdfUrl(result.data);
         return result;
       } else {
         Alert.alert('Upload Error', result.error);
@@ -151,30 +149,28 @@ const BusinessProfileSetup = ({ navigation, route }) => {
       setUploadProgress(0);
     }
   };
-
   const handleFormSubmission = async () => {
     setIsUploading(true);
     setUploadProgress(0);
 
     try {
       // uncomment this when you want to upload images and pdf
-      // const imageUploadResult = await uploadImages(businessData.images);
-      // if (!imageUploadResult.success) {
-      //   return;
-      // }
-      // const pdfUploadResult = await uploadPDF(
-      //   businessData.pdfDocument?.uri,
-      //   businessData.pdfDocument?.name || 'business-document.pdf',
-      // );
-      // if (!pdfUploadResult.success) {
-      //   return;
-      // }
-
+      const imageUploadResult = await uploadImages(businessData.images);
+      if (!imageUploadResult.success) {
+        return;
+      }
+      const pdfUploadResult = await uploadPDF(
+        businessData.pdfDocument?.uri,
+        businessData.pdfDocument?.name || 'business-document.pdf',
+      );
+      if (!pdfUploadResult.success) {
+        return;
+      }
       // Prepare final business data with uploaded URLs
       const finalBusinessData = {
         ...businessData,
-        images: uploadedImageUrls,
-        pdfDocument: uploadedPdfUrl,
+        images: imageUploadResult.data,
+        pdfDocument: pdfUploadResult.data,
         userId: firebaseService.getCurrentUser().uid,
       };
       firebaseService.addDocument(COLLECTIONS.BUSINESSES, finalBusinessData);
@@ -182,10 +178,7 @@ const BusinessProfileSetup = ({ navigation, route }) => {
         {
           text: 'OK',
           onPress: () => {
-            navigation.replace('BottomTabNavigator', {
-              screen: 'Dashboard',
-              params: { businesses: [finalBusinessData] },
-            });
+            navigation.replace('Dashboard');
           },
         },
       ]);
@@ -200,15 +193,102 @@ const BusinessProfileSetup = ({ navigation, route }) => {
       setUploadProgress(0);
     }
   };
+  const handleEditSubmit = () => {
+    if (currentStep == 4) {
+      const { isValid, errors, firstErrorKey } =
+        validateBusinessForm(businessData);
 
-  /**
-   * Handle continue button press
-   */
+      if (!isValid) {
+        Alert.alert(
+          'Error',
+          `Can't submit the form due to reason: ${errors[firstErrorKey]}`,
+        );
+        setDataErrors(errors);
+      } else {
+        handleFormEdition();
+      }
+    } else {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+  const handleFormEdition = async () => {
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      // uncomment this when you want to upload images and pdf
+      let finalImages = [];
+      if (businessData.images.length > 0) {
+        const imagesToUpload = [];
+        const prevImages = [];
+        businessData.images.forEach(image => {
+          if (image.includes('file://')) {
+            imagesToUpload.push(image);
+          } else {
+            prevImages.push(image);
+          }
+        });
+        finalImages = [...prevImages];
+        if (imagesToUpload.length > 0) {
+          const imageUploadResult = await uploadImages(imagesToUpload);
+          if (!imageUploadResult.success) {
+            return;
+          }
+          finalImages = [...prevImages, ...imageUploadResult.data];
+        }
+      }
+      let finalPDF = null;
+      if (
+        businessData.pdfDocument &&
+        !businessData.pdfDocument.includes('https://firebasestorage')
+      ) {
+        const pdfUploadResult = await uploadPDF(
+          businessData.pdfDocument?.uri,
+          businessData.pdfDocument?.name || 'business-document.pdf',
+        );
+        if (!pdfUploadResult.success) {
+          return;
+        }
+        finalPDF = pdfUploadResult.data;
+      } else {
+        finalPDF = businessData.pdfDocument;
+      }
+      // Prepare final business data with uploaded URLs
+      const finalBusinessData = {
+        ...businessData,
+        images: finalImages,
+        pdfDocument: finalPDF,
+        userId: firebaseService.getCurrentUser().uid,
+      };
+
+      firebaseService.updateDocument(
+        COLLECTIONS.BUSINESSES,
+        params.editBusiness.id,
+        finalBusinessData,
+      );
+      Alert.alert('Success', 'Business profile updated successfully!', [
+        {
+          text: 'OK',
+          onPress: () => {
+            navigation.replace('Dashboard');
+          },
+        },
+      ]);
+    } catch (error) {
+      console.error('Error in form submission:', error);
+      Alert.alert(
+        'Error',
+        'Failed to create business profile. Please try again.',
+      );
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
   const handleContinue = () => {
     if (currentStep == 4) {
       const { isValid, errors, firstErrorKey } =
         validateBusinessForm(businessData);
-      console.log(isValid, errors, firstErrorKey);
 
       if (!isValid) {
         Alert.alert(
@@ -223,7 +303,6 @@ const BusinessProfileSetup = ({ navigation, route }) => {
       setCurrentStep(currentStep + 1);
     }
   };
-
   const renderProgressIndicator = () => {
     const steps = [1, 2, 3, 4];
 
@@ -267,11 +346,8 @@ const BusinessProfileSetup = ({ navigation, route }) => {
       </View>
     );
   };
-
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
-
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -528,6 +604,20 @@ const BusinessProfileSetup = ({ navigation, route }) => {
               onImagesSelected={images =>
                 setBusinessData({ ...businessData, images })
               }
+              selectedImages={
+                params?.editBusiness
+                  ? sampleImages.map((image, index) => {
+                      if (params.editBusiness.images.length > index) {
+                        return {
+                          uri: params.editBusiness.images[index],
+                          id: index.toString(),
+                        };
+                      } else {
+                        return { uri: null, id: index.toString() };
+                      }
+                    })
+                  : sampleImages
+              }
               maxImages={3}
               containerStyle={styles.imagePickerContainer}
             />
@@ -580,6 +670,17 @@ const BusinessProfileSetup = ({ navigation, route }) => {
               onDocumentSelected={document =>
                 setBusinessData({ ...businessData, pdfDocument: document })
               }
+              selectedDocument={
+                params?.editBusiness
+                  ? {
+                      uri: params.editBusiness.pdfDocument,
+                      name: 'File.pdf',
+                      type: 'application/pdf',
+                      size: 1000,
+                      id: '1',
+                    }
+                  : businessData.pdfDocument
+              }
               placeholder="PDF file of menu"
               leftIcon={
                 <Icon
@@ -620,7 +721,7 @@ const BusinessProfileSetup = ({ navigation, route }) => {
         )}
         <CustomButton
           title={isUploading ? 'Uploading...' : 'Continue'}
-          onPress={handleContinue}
+          onPress={params?.editBusiness ? handleEditSubmit : handleContinue}
           variant="primary"
           size="large"
           fullWidth

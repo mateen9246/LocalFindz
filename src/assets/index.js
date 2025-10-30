@@ -62,6 +62,11 @@ const assets = {
   phoneIconWhite: require('./images/Vector (41).png'),
   profile: require('./images/Profile.png'),
   bookmarkBg: require('./images/Vector 14.png'),
+  boostIcon: require('./images/Boost.png'),
+  backIcon: require('./images/Back.png'),
+  likeIcon: require('./images/Like.png'),
+  starIcon: require('./images/Star.png'),
+  messageIcon: require('./images/X.png'),
 };
 
 export default assets;

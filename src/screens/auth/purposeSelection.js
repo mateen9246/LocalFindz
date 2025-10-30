@@ -24,13 +24,15 @@ function PurposeSelection({ navigation }) {
         '==',
         firebaseService.getCurrentUser().uid,
       );
+      console.log(businesses);
       if (businesses.docs.length > 0) {
-        navigation.replace('BottomTabNavigator', {
-          screen: 'Dashboard',
-          params: { businesses: businesses.docs.map(doc => doc.data()) },
+        navigation.navigate('Dashboard', {
+          businesses: businesses.docs.map(doc => {
+            return { ...doc.data(), id: doc.id };
+          }),
         });
       } else {
-        navigation.replace('BusinessProfileSetup');
+        navigation.navigate('BusinessProfileSetup');
       }
       setIsLoading(false);
     }

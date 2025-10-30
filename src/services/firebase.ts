@@ -665,7 +665,10 @@ class FirebaseService {
       const storagePath = `${folder}/${user.uid}/${uniqueFileName}`;
 
       const reference = this.privateStorage.ref(storagePath);
-      const task = reference.putFile(fileUri);
+      console.log(fileUri);
+      const task = reference.putFile(fileUri, {
+        contentType: 'application/pdf',
+      });
 
       // Listen for upload progress
       if (onProgress) {

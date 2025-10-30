@@ -20,22 +20,52 @@ import { useIsFocused } from '@react-navigation/native';
 import { COLLECTIONS, firebaseService } from '../../../services';
 
 export default function Home({ navigation }) {
-  const isFocused = useIsFocused();
   const [recommendations, setRecommendations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-
+  const [categorySelected, setCategorySelected] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  async function fetchRecommendations() {
+    setIsLoading(true);
+    const data = await firebaseService.getCollection(
+      COLLECTIONS.BUSINESSES,
+      10,
+    );
+    setRecommendations(data.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+    setIsLoading(false);
+  }
   useEffect(() => {
-    async function fetchRecommendations() {
-      setIsLoading(true);
-      const data = await firebaseService.getCollection(
-        COLLECTIONS.BUSINESSES,
-        10,
-      );
-      setRecommendations(data.docs.map(doc => ({ ...doc.data(), id: doc.id })));
-      setIsLoading(false);
-    }
     fetchRecommendations();
   }, []);
+
+  useEffect(() => {
+    if (!!categorySelected) {
+      async function fetchCategoryRecommendations() {
+        const data = await firebaseService.queryCollection(
+          COLLECTIONS.BUSINESSES,
+          'tags',
+          'array-contains',
+          categorySelected,
+        );
+        setRecommendations(
+          data.docs.map(doc => ({ ...doc.data(), id: doc.id })),
+        );
+      }
+      fetchCategoryRecommendations();
+    } else {
+      fetchRecommendations();
+    }
+  }, [categorySelected]);
+
+  async function filterSearchRecommendations() {
+    const data = await firebaseService.queryCollection(
+      COLLECTIONS.BUSINESSES,
+      'businessName',
+      '==',
+      searchQuery,
+    );
+    setRecommendations(data.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+    setIsLoading(false);
+  }
 
   const categories = [
     {
@@ -65,7 +95,6 @@ export default function Home({ navigation }) {
     },
   ];
   function renderListRecommendationItem({ item }) {
-    console.log(item);
     return (
       <TouchableOpacity
         key={item.id}
@@ -140,10 +169,15 @@ export default function Home({ navigation }) {
             backgroundColor: COLORS.white,
             width: wp('70'),
           }}
+          onChangeText={text => setSearchQuery(text)}
+          value={searchQuery}
           inputStyle={styles.searchInput}
           leftIcon={<Image source={assets.searchIcon} resizeMethod="contain" />}
           rightIcon={
-            <TouchableOpacity style={styles.filterButton}>
+            <TouchableOpacity
+              style={styles.filterButton}
+              onPress={filterSearchRecommendations}
+            >
               <Image source={assets.filterIcon} resizeMethod="contain" />
             </TouchableOpacity>
           }
@@ -167,8 +201,25 @@ export default function Home({ navigation }) {
                 <TouchableOpacity
                   key={category.id}
                   style={styles.categoryButton}
+                  onPress={() => {
+                    if (categorySelected === category.name) {
+                      setCategorySelected('');
+                    } else {
+                      setCategorySelected(category.name);
+                    }
+                  }}
                 >
-                  <View style={styles.categoryIconContainer}>
+                  <View
+                    style={[
+                      styles.categoryIconContainer,
+                      {
+                        backgroundColor:
+                          categorySelected === category.name
+                            ? COLORS.secondary
+                            : COLORS.white,
+                      },
+                    ]}
+                  >
                     <Image
                       source={category.image}
                       style={styles.categoryImage}
@@ -201,13 +252,15 @@ export default function Home({ navigation }) {
               decelerationRate="fast"
               keyExtractor={item => item.id}
               ListEmptyComponent={
-                isLoading ? (
-                  <View style={styles.loadingComponent}>
+                <View style={styles.loadingComponent}>
+                  {isLoading ? (
                     <ActivityIndicator size="large" color={COLORS.white} />
-                  </View>
-                ) : (
-                  <PoppinsText>No recommendations found</PoppinsText>
-                )
+                  ) : (
+                    <PoppinsText style={styles.noRecommendationsText}>
+                      No recommendations found
+                    </PoppinsText>
+                  )}
+                </View>
               }
               style={styles.recommendationsScroll}
               renderItem={renderListRecommendationItem}
@@ -350,6 +403,12 @@ const styles = StyleSheet.create({
     height: hp(50),
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  noRecommendationsText: {
+    fontSize: hp(2),
+    color: COLORS.white,
+    fontFamily: 'Poppins-Medium',
+    textAlign: 'center',
   },
   recommendationsScroll: {
     marginHorizontal: -wp(5),

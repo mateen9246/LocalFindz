@@ -5,4 +5,4 @@ export { default as Welcome } from './unAuth/Welcome';
 export { default as SplashScreen } from './unAuth/SplashScreen';
 export { default as Home } from './auth/explorer/Home';
 export { default as Dashboard } from './auth/business/Dashboard';
-export { default as BusinessProfileSetup } from './auth/business/businessProfileSetup';
+export { default as BusinessProfileSetup } from './auth/business/BusinessProfileSetup';

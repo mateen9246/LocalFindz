@@ -22,6 +22,7 @@ interface ImagePickerProps {
   onImagesSelected?: (images: string[]) => void;
   maxImages?: number;
   containerStyle?: any;
+  selectedImages: ImageSlot[];
 }
 
 interface ImageSlot {
@@ -33,13 +34,10 @@ const ImagePicker: React.FC<ImagePickerProps> = ({
   onImagesSelected,
   maxImages = 3,
   containerStyle,
+  selectedImages: initialImages,
 }) => {
-  const [selectedImages, setSelectedImages] = useState<ImageSlot[]>(
-    Array.from({ length: maxImages }, (_, index) => ({
-      id: `slot-${index}`,
-      uri: null,
-    })),
-  );
+  const [selectedImages, setSelectedImages] =
+    useState<ImageSlot[]>(initialImages);
 
   const requestCameraPermission = async (): Promise<boolean> => {
     if (Platform.OS === 'android') {

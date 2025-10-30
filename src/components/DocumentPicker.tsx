@@ -11,6 +11,7 @@ import DocumentPicker, {
   types,
   pick,
 } from '@react-native-documents/picker';
+import RNFS from 'react-native-fs';
 import PoppinsText from './PoppinsText';
 import { COLORS } from '../constants';
 import { hp, wp } from '../utils/responsive';
@@ -24,6 +25,7 @@ interface DocumentPickerProps {
   placeholder?: string;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  selectedDocument?: any;
 }
 
 const DocumentPickerComponent: React.FC<DocumentPickerProps> = ({
@@ -34,9 +36,44 @@ const DocumentPickerComponent: React.FC<DocumentPickerProps> = ({
   placeholder = 'Select a document',
   leftIcon,
   rightIcon,
+  selectedDocument: initialDocument,
 }) => {
   const [selectedDocument, setSelectedDocument] =
-    useState<DocumentPickerResponse | null>(null);
+    useState<DocumentPickerResponse | null>(initialDocument);
+
+  /**
+   * Converts content:// URI to file:// path on Android
+   * @param uri The content:// URI to convert
+   * @returns The file:// path
+   */
+  const convertContentUriToFile = async (uri: string): Promise<string> => {
+    // If already a file:// URI, return as is
+    if (uri.startsWith('file://')) {
+      return uri;
+    }
+
+    // For content:// URIs on Android, copy to a temporary file
+    if (Platform.OS === 'android' && uri.startsWith('content://')) {
+      try {
+        // Create a temporary file path
+        const timestamp = Date.now();
+        const tempFileName = `temp_${timestamp}.pdf`;
+        const tempFilePath = `${RNFS.CachesDirectoryPath}/${tempFileName}`;
+
+        // Copy the content URI to the temporary file
+        await RNFS.copyFile(uri, tempFilePath);
+
+        // Return the file:// path
+        return `file://${tempFilePath}`;
+      } catch (error) {
+        console.error('Error converting content URI:', error);
+        throw error;
+      }
+    }
+
+    // For iOS or other cases, return as is
+    return uri;
+  };
 
   const pickDocument = async () => {
     try {
@@ -60,8 +97,17 @@ const DocumentPickerComponent: React.FC<DocumentPickerProps> = ({
           return;
         }
 
-        setSelectedDocument(document);
-        onDocumentSelected?.(document);
+        // Convert content:// URI to file:// path if needed
+        const convertedUri = await convertContentUriToFile(document.uri);
+
+        // Create a new document object with the converted URI
+        const convertedDocument = {
+          ...document,
+          uri: convertedUri,
+        };
+
+        setSelectedDocument(convertedDocument);
+        onDocumentSelected?.(convertedDocument);
       }
     } catch (err) {
       // Check if user cancelled the picker

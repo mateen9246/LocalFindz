@@ -8,40 +8,45 @@ import {
   Image,
   TextInput,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { COLORS } from '../../../constants';
 import { PoppinsText, Icon } from '../../../components';
 import assets from '../../../assets';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { hp, wp } from '../../../utils/responsive';
-import { useIsFocused } from '@react-navigation/native';
 import { COLLECTIONS, firebaseService } from '../../../services';
-
+import BottomTab from '../../../components/BottomTab';
 const Dashboard = ({ navigation, route }) => {
   const { businesses } = route.params || [];
-  const isFocused = useIsFocused();
-
-  useEffect(async () => {
-    (async () => {
-      if (businesses && businesses.length == 0) {
-        const data = await firebaseService.queryCollection(
-          COLLECTIONS.BUSINESSES,
-          'userId',
-          '==',
-          firebaseService.getCurrentUser().uid,
-        );
-        setStores(data.docs.map(doc => doc.data()));
-      }
-    })();
-  }, [isFocused]);
+  useEffect(() => {
+    getStores();
+  }, []);
+  async function getStores() {
+    if (!businesses || businesses.length == 0) {
+      const data = await firebaseService.queryCollection(
+        COLLECTIONS.BUSINESSES,
+        'userId',
+        '==',
+        firebaseService.getCurrentUser().uid,
+      );
+      setStores(
+        data.docs.map(doc => {
+          return { ...doc.data(), id: doc.id };
+        }),
+      );
+    } else {
+      setStores(businesses);
+    }
+  }
   const [selectedLocation, setSelectedLocation] = useState('Birmingham');
   const [searchText, setSearchText] = useState('');
-  const [stores, setStores] = useState(businesses || []);
+  const [stores, setStores] = useState([]);
   const [analyticsData, setAnalyticsData] = useState([
     {
       id: 1,
       title: 'Total Stores',
-      value: '12',
+      value: stores.length || 0,
       change: '+25.3',
       changeType: 'positive',
       icon: assets.purpleStoreIcon,
@@ -125,16 +130,26 @@ const Dashboard = ({ navigation, route }) => {
       </View>
     </View>
   );
-
-  const renderStoreCard = store => (
-    <View key={store?.id} style={styles.storeCard}>
-      <Image source={assets.storeImage} style={styles.storeImage} />
+  const renderStoreCard = (store, index) => (
+    <TouchableOpacity
+      key={index}
+      style={styles.storeCard}
+      onPress={() => navigation.navigate('BusinessStoreDetails', { store })}
+    >
+      <Image
+        source={
+          store && store.images.length > 0
+            ? { uri: store.images[0] }
+            : assets.storeImage
+        }
+        style={styles.storeImage}
+      />
       <View style={styles.storeInfo}>
         <PoppinsText style={styles.storeName}>
           {store?.businessName || 'N/A'}
         </PoppinsText>
         <PoppinsText style={styles.storeAddress} numberOfLines={1}>
-          {store?.address || 'No.5 Jalan Karang Kembar...'}
+          {store?.address || 'N/A'}
         </PoppinsText>
         <View style={styles.storeStats}>
           <View style={styles.statItem}>
@@ -170,12 +185,20 @@ const Dashboard = ({ navigation, route }) => {
         </View>
       </View>
       <View style={styles.storeActions}>
-        <TouchableOpacity style={styles.editButton}>
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() =>
+            navigation.navigate('BusinessProfileSetup', { editBusiness: store })
+          }
+        >
           <PoppinsText style={styles.editButtonText} weight="bold">
             Edit
           </PoppinsText>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.deleteButton}>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => handleDeleteStore(store)}
+        >
           <Image
             source={assets.deleteStoreIcon}
             style={styles.deleteStoreIcon}
@@ -183,9 +206,18 @@ const Dashboard = ({ navigation, route }) => {
           />
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
-
+  function handleDeleteStore(store) {
+    Alert.alert('Delete Store', 'Are you sure you want to delete this store?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', onPress: () => handleDeleteStoreConfirm(store) },
+    ]);
+  }
+  function handleDeleteStoreConfirm(store) {
+    firebaseService.deleteDocument(COLLECTIONS.BUSINESSES, store.id);
+    getStores();
+  }
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
@@ -250,9 +282,18 @@ const Dashboard = ({ navigation, route }) => {
         {/* Listed Stores Section */}
         <View style={styles.section}>
           <PoppinsText style={styles.sectionTitle}>Listed stores</PoppinsText>
-          <View style={styles.storesList}>{stores.map(renderStoreCard)}</View>
+          <View style={styles.storesList}>
+            {stores.length == 0 && (
+              <PoppinsText style={styles.noStoresText}>
+                No stores found
+              </PoppinsText>
+            )}
+            {stores.length > 0 &&
+              [...stores].map((store, index) => renderStoreCard(store, index))}
+          </View>
         </View>
       </ScrollView>
+      <BottomTab activeTab="Dashboard" navigation={navigation} />
     </SafeAreaView>
   );
 };
@@ -337,6 +378,7 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
     paddingHorizontal: wp(5),
+    marginBottom: hp(5),
   },
   section: {
     marginBottom: hp(3),
@@ -417,6 +459,7 @@ const styles = StyleSheet.create({
   storeCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     backgroundColor: COLORS.white,
     borderRadius: hp(1),
     padding: hp(2),
@@ -466,6 +509,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    alignSelf: 'center',
   },
   editButton: {
     borderWidth: 1.5,
